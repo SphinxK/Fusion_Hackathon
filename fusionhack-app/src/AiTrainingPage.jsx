@@ -54,43 +54,49 @@ export default function AiTrainingPage() {
   const modelsReadyRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
+  const [startupChoice, setStartupChoice] = useState(null); // 'browser' or 'file'
   const [prediction, setPrediction] = useState("Awaiting Data...");
   const [confidence, setConfidence] = useState(0);
   const [trainingCounts, setTrainingCounts] = useState({ undamaged: 0, damaged: 0 });
 
   useEffect(() => {
+    if (!startupChoice) return;
+
     async function setupAiAndCamera() {
       try {
         // 1. Load the AI Models
         console.log("Loading AI Models...");
-        classifierRef.current = knnClassifier.create();
+        if (!classifierRef.current) {
+          classifierRef.current = knnClassifier.create();
+        }
         mobilenetRef.current = await mobilenet.load({ version: 2, alpha: 1.0 });
         console.log("Models Loaded!");
         modelsReadyRef.current = true;
 
-        // Try to load saved model from IndexedDB
-        const savedModel = await loadFromDB('knnModel');
-        const savedCounts = await loadFromDB('knnCounts');
-        if (savedModel && savedCounts) {
+        if (startupChoice === 'browser') {
+          // Try to load saved model from IndexedDB safely
           try {
-            const datasetObj = savedModel;
-            const dataset = {};
-            Object.keys(datasetObj).forEach(key => {
-              let newKey = key;
-              if (key === 'clean') newKey = 'undamaged';
-              if (key === 'dirty') newKey = 'damaged';
-              dataset[newKey] = tf.tensor(datasetObj[key].data, datasetObj[key].shape);
-            });
-            classifierRef.current.setClassifierDataset(dataset);
-            
-            const parsedCounts = savedCounts;
-            setTrainingCounts({
-              undamaged: parsedCounts.undamaged !== undefined ? parsedCounts.undamaged : (parsedCounts.clean || 0),
-              damaged: parsedCounts.damaged !== undefined ? parsedCounts.damaged : (parsedCounts.dirty || 0)
-            });
-            console.log("Loaded saved model from previous session!");
-          } catch (e) {
-            console.error("Failed to load saved model:", e);
+            const savedModel = await loadFromDB('knnModel');
+            const savedCounts = await loadFromDB('knnCounts');
+            if (savedModel && savedCounts) {
+              const datasetObj = savedModel;
+              const dataset = {};
+              Object.keys(datasetObj).forEach(key => {
+                let newKey = key;
+                if (key === 'clean') newKey = 'undamaged';
+                if (key === 'dirty') newKey = 'damaged';
+                dataset[newKey] = tf.tensor(datasetObj[key].data, datasetObj[key].shape);
+              });
+              classifierRef.current.setClassifierDataset(dataset);
+              
+              setTrainingCounts({
+                undamaged: savedCounts.undamaged !== undefined ? savedCounts.undamaged : (savedCounts.clean || 0),
+                damaged: savedCounts.damaged !== undefined ? savedCounts.damaged : (savedCounts.dirty || 0)
+              });
+              console.log("Loaded saved model from previous session!");
+            }
+          } catch (dbErr) {
+            console.warn("Browser DB load failed or missing:", dbErr);
           }
         }
 
@@ -110,7 +116,7 @@ export default function AiTrainingPage() {
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, [isReady]);
+  }, [startupChoice, isReady]);
 
   // --- Core AI Functions ---
 
@@ -275,6 +281,68 @@ export default function AiTrainingPage() {
     // Reset file input
     e.target.value = null;
   };
+
+  const handleInitialImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const importData = JSON.parse(text);
+      if (!importData || !importData.modelData || !importData.countsData) {
+        throw new Error("Invalid model file structure.");
+      }
+
+      // Recreate classifier safely
+      try { if (classifierRef.current) classifierRef.current.dispose(); } catch(err){}
+      classifierRef.current = knnClassifier.create();
+
+      const datasetObj = importData.modelData;
+      const dataset = {};
+      Object.keys(datasetObj).forEach(key => {
+        dataset[key] = tf.tensor(datasetObj[key].data, datasetObj[key].shape);
+      });
+      classifierRef.current.setClassifierDataset(dataset);
+      
+      setTrainingCounts(importData.countsData);
+      
+      // Save it to DB automatically on import
+      try {
+        await saveToDB('knnModel', datasetObj);
+        await saveToDB('knnCounts', importData.countsData);
+      } catch (e) {}
+      
+      setPrediction("Awaiting Data...");
+      setConfidence(0);
+      setStartupChoice('file');
+    } catch (err) {
+      console.error("Initial import error:", err);
+      if (!classifierRef.current) classifierRef.current = knnClassifier.create();
+      alert("Failed to import model: " + err.message);
+    }
+    
+    e.target.value = null;
+  };
+
+  if (!startupChoice) {
+    return (
+      <div className="camera-container" style={{ padding: '20px', textAlign: 'center' }}>
+        <h2>Initialize AI Inspection</h2>
+        <div style={styles.resultBox}>
+          <p style={{ marginBottom: '20px' }}>Select an option to load the AI Brain before running the camera.</p>
+          <div style={styles.buttonRow}>
+            <button style={styles.btnSave} onClick={() => setStartupChoice('browser')}>
+              Start / Load from Browser
+            </button>
+            <label style={styles.btnImport}>
+              Import Model from File
+              <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleInitialImport} />
+            </label>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="camera-container">
