@@ -132,7 +132,7 @@ export default function AiTrainingPage() {
 
   return (
     <div className="camera-container">
-      <h2>AI Dish Inspector</h2>
+      <h2>AI Plate Inspection</h2>
       
       {!isReady && <p className="pulse">Loading Neural Network...</p>}
 
@@ -149,10 +149,10 @@ export default function AiTrainingPage() {
         <div style={styles.controls}>
           <div style={styles.buttonRow}>
             <button style={styles.btnClean} onClick={() => addTrainingExample('clean')}>
-             Train Clean ({trainingCounts.clean})
+             Train Undamaged ({trainingCounts.clean})
             </button>
             <button style={styles.btnDirty} onClick={() => addTrainingExample('dirty')}>
-             Train Dirty ({trainingCounts.dirty})
+             Train Damaged ({trainingCounts.dirty})
             </button>
           </div>
 
