@@ -50,19 +50,51 @@ const HomePage = () => {
 };
 
 // 2. Simple placeholder components
-const DashboardPage = () => <div className="placeholder"><h2>Dashboard</h2></div>;
+const DashboardPage = ({ robotMode, setRobotMode }) => (
+  <div className="dashboard-container">
+    <div className="mode-selector" style={{ marginBottom: '24px' }}>
+      <label htmlFor="robot-mode" className="mode-label">Robot Mode:</label>
+      <select
+        id="robot-mode"
+        value={robotMode}
+        onChange={(e) => setRobotMode(e.target.value)}
+        className={`mode-select ${robotMode}`}
+      >
+        <option value="standby">Standby</option>
+        <option value="inspection">Inspection</option>
+        <option value="maintenance">Maintenance</option>
+      </select>
+    </div>
+
+    <div className="mode-content">
+      {robotMode === 'inspection' && (
+        <div className="menu-placeholder">
+          <h3>🔍 Inspection Menu</h3>
+          <p>Controls and sensors for inspection mode will appear here.</p>
+        </div>
+      )}
+      {robotMode === 'maintenance' && (
+        <div className="menu-placeholder">
+          <h3>🔧 Maintenance Menu</h3>
+          <p>Diagnostics, calibration, and repair options will appear here.</p>
+        </div>
+      )}
+    </div>
+  </div>
+);
 const SettingsPage = () => <div className="placeholder"><h2>Settings</h2></div>;
 
 // 3. The Main App Container
 export default function App() {
   const [activeTab, setActiveTab] = useState('camera');
+  const [robotMode, setRobotMode] = useState('standby');
 
   // Router function to render the correct component
   const renderContent = () => {
     switch (activeTab) {
       case 'camera': return <CameraPage />;
       case 'home': return <HomePage />;
-      case 'dashboard': return <DashboardPage />;
+      case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={setRobotMode} />;
       case 'settings': return <SettingsPage />;
       default: return <CameraPage />;
     }
@@ -70,6 +102,11 @@ export default function App() {
 
   return (
     <main className="app-container">
+      {/* App Header */}
+      <header className="app-header">
+        <h2 className="app-title">Robot Control</h2>
+      </header>
+
       {/* Main Content Area */}
       <div className="content-area">
         {renderContent()}
@@ -77,26 +114,26 @@ export default function App() {
 
       {/* Bottom Navigation Bar */}
       <nav className="homebar">
-        <button 
-          className={activeTab === 'camera' ? 'tab active' : 'tab'} 
+        <button
+          className={activeTab === 'camera' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('camera')}
         >
           📷 Camera
         </button>
-        <button 
-          className={activeTab === 'home' ? 'tab active' : 'tab'} 
+        <button
+          className={activeTab === 'home' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('home')}
         >
           🏠 Home
         </button>
-        <button 
-          className={activeTab === 'dashboard' ? 'tab active' : 'tab'} 
+        <button
+          className={activeTab === 'dashboard' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('dashboard')}
         >
           📊 Dash
         </button>
-        <button 
-          className={activeTab === 'settings' ? 'tab active' : 'tab'} 
+        <button
+          className={activeTab === 'settings' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('settings')}
         >
           ⚙️ Settings

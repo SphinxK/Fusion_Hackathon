@@ -34,10 +34,10 @@ export default function CameraPage() {
       {error ? (
         <p className="error-text">{error}</p>
       ) : (
-        <video 
-          ref={videoRef} 
-          autoPlay 
-          playsInline 
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
           className="video-feed"
         />
       )}
