@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import reactLogo from "./assets/react.svg";
 import CameraPage from "./camera";
@@ -50,7 +50,7 @@ const HomePage = () => {
 };
 
 // 2. Simple placeholder components
-const DashboardPage = ({ robotMode, setRobotMode }) => (
+const DashboardPage = ({ robotMode, setRobotMode, isInspecting }) => (
   <div className="dashboard-container">
     <div className="mode-selector" style={{ marginBottom: '24px' }}>
       <label htmlFor="robot-mode" className="mode-label">Robot Mode:</label>
@@ -59,6 +59,7 @@ const DashboardPage = ({ robotMode, setRobotMode }) => (
         value={robotMode}
         onChange={(e) => setRobotMode(e.target.value)}
         className={`mode-select ${robotMode}`}
+        disabled={isInspecting}
       >
         <option value="standby">Standby</option>
         <option value="inspection">Inspection</option>
@@ -88,13 +89,36 @@ const SettingsPage = () => <div className="placeholder"><h2>Settings</h2></div>;
 export default function App() {
   const [activeTab, setActiveTab] = useState('camera');
   const [robotMode, setRobotMode] = useState('standby');
+  const [isInspecting, setIsInspecting] = useState(false);
+  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(0);
+
+  const handleSetRobotMode = (mode) => {
+    if (isInspecting) return;
+    setRobotMode(mode);
+    if (mode === 'inspection') {
+      setIsInspecting(true);
+      setInspectionTimeLeft(5); // 5 sec inspection timer
+      setActiveTab('camera');
+    }
+  };
+
+  useEffect(() => {
+    let timerId;
+    if (isInspecting && inspectionTimeLeft > 0) {
+      timerId = setTimeout(() => setInspectionTimeLeft(inspectionTimeLeft - 1), 1000);
+    } else if (isInspecting && inspectionTimeLeft === 0) {
+      setIsInspecting(false);
+      setRobotMode('standby');
+    }
+    return () => clearTimeout(timerId);
+  }, [isInspecting, inspectionTimeLeft]);
 
   // Router function to render the correct component
   const renderContent = () => {
     switch (activeTab) {
       case 'camera': return <CameraPage />;
       case 'home': return <HomePage />;
-      case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={setRobotMode} />;
+      case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
       case 'settings': return <SettingsPage />;
       default: return <CameraPage />;
     }
@@ -103,8 +127,14 @@ export default function App() {
   return (
     <main className="app-container">
       {/* App Header */}
-      <header className="app-header">
+      <header className="app-header" style={{ display: 'flex', alignItems: 'center' }}>
         <h2 className="app-title">Robot Control</h2>
+        {isInspecting && (
+          <div className="inspection-banner" style={{ background: '#eab308', color: '#000', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '8px' }}>⚠️</span>
+            Inspecting... {inspectionTimeLeft}s
+          </div>
+        )}
       </header>
 
       {/* Main Content Area */}
@@ -117,24 +147,28 @@ export default function App() {
         <button
           className={activeTab === 'camera' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('camera')}
+          disabled={isInspecting}
         >
           📷 Camera
         </button>
         <button
           className={activeTab === 'home' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('home')}
+          disabled={isInspecting}
         >
           🏠 Home
         </button>
         <button
           className={activeTab === 'dashboard' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('dashboard')}
+          disabled={isInspecting}
         >
           📊 Dash
         </button>
         <button
           className={activeTab === 'settings' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('settings')}
+          disabled={isInspecting}
         >
           ⚙️ Settings
         </button>
