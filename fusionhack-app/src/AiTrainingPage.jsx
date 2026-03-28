@@ -3,20 +3,21 @@ import * as tf from '@tensorflow/tfjs';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
+const IP_ADDRESS = "10.207.5.199:8080";
+
 export default function AiTrainingPage() {
   const videoRef = useRef(null);
   const classifierRef = useRef(null);
   const mobilenetRef = useRef(null);
   const requestRef = useRef(null); // For the prediction loop
+  const modelsReadyRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
   const [prediction, setPrediction] = useState("Awaiting Data...");
   const [confidence, setConfidence] = useState(0);
-  const [trainingCounts, setTrainingCounts] = useState({ clean: 0, dirty: 0 });
+  const [trainingCounts, setTrainingCounts] = useState({ undamaged: 0, damaged: 0 });
 
   useEffect(() => {
-    let mediaStream = null;
-
     async function setupAiAndCamera() {
       try {
         // 1. Load the AI Models
@@ -24,6 +25,7 @@ export default function AiTrainingPage() {
         classifierRef.current = knnClassifier.create();
         mobilenetRef.current = await mobilenet.load({ version: 2, alpha: 1.0 });
         console.log("Models Loaded!");
+        modelsReadyRef.current = true;
 
         // Try to load saved model from localStorage
         const savedModel = localStorage.getItem('knnModel');
@@ -43,15 +45,10 @@ export default function AiTrainingPage() {
           }
         }
 
-        // 2. Start the Webcam
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-          // We must wait for the video to actually start playing before predicting
-          videoRef.current.onloadeddata = () => {
-            setIsReady(true);
-            startPredicting(); 
-          };
+        // Check if stream image is already loaded (it might load faster than models)
+        if (videoRef.current && videoRef.current.complete && videoRef.current.naturalHeight !== 0) {
+          setIsReady(true);
+          startPredicting();
         }
       } catch (err) {
         console.error("Setup failed:", err);
@@ -62,10 +59,9 @@ export default function AiTrainingPage() {
 
     // Cleanup when leaving the page
     return () => {
-      if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
-  }, []);
+  }, [isReady]);
 
   // --- Core AI Functions ---
 
@@ -122,7 +118,7 @@ export default function AiTrainingPage() {
   const clearModel = () => {
     if (classifierRef.current) {
       classifierRef.current.clearAllClasses();
-      setTrainingCounts({ clean: 0, dirty: 0 });
+      setTrainingCounts({ undamaged: 0, damaged: 0 });
       localStorage.removeItem('knnModel');
       localStorage.removeItem('knnCounts');
       setPrediction("Awaiting Data...");
@@ -134,25 +130,39 @@ export default function AiTrainingPage() {
     <div className="camera-container">
       <h2>AI Plate Inspection</h2>
       
-      {!isReady && <p className="pulse">Loading Neural Network...</p>}
+      {!isReady && <p className="pulse">Loading Neural Network & Camera Stream...</p>}
 
-      <video
+      <img
         ref={videoRef}
-        autoPlay
-        playsInline
-        muted
+        src={`http://${IP_ADDRESS}/video`}
+        alt="Camera Stream"
+        crossOrigin="anonymous"
         className="video-feed"
-        style={{ border: prediction === 'clean' ? '4px solid #34c759' : prediction === 'dirty' ? '4px solid #ff3b30' : 'none' }}
+        style={{ border: prediction === 'undamaged' ? '4px solid #34c759' : prediction === 'damaged' ? '4px solid #ff3b30' : 'none' }}
+        onLoad={() => {
+          if (modelsReadyRef.current && !isReady) {
+            setIsReady(true);
+            startPredicting();
+          }
+        }}
+        onError={(e) => {
+          // Fallback to root or /stream if the default Android IP webcam /video path isn't right
+          if (e.target.src.includes("/video")) {
+            e.target.src = `http://${IP_ADDRESS}/`;
+          } else if (!e.target.src.includes("/stream")) {
+            e.target.src = `http://${IP_ADDRESS}/stream`;
+          }
+        }}
       />
 
       {isReady && (
         <div style={styles.controls}>
           <div style={styles.buttonRow}>
-            <button style={styles.btnClean} onClick={() => addTrainingExample('clean')}>
-             Train Undamaged ({trainingCounts.clean})
+            <button style={styles.btnUndamaged} onClick={() => addTrainingExample('undamaged')}>
+             Train Undamaged ({trainingCounts.undamaged})
             </button>
-            <button style={styles.btnDirty} onClick={() => addTrainingExample('dirty')}>
-             Train Damaged ({trainingCounts.dirty})
+            <button style={styles.btnDamaged} onClick={() => addTrainingExample('damaged')}>
+             Train Damaged ({trainingCounts.damaged})
             </button>
           </div>
 
@@ -176,8 +186,8 @@ export default function AiTrainingPage() {
 const styles = {
   controls: { marginTop: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '15px' },
   buttonRow: { display: 'flex', gap: '10px', justifyContent: 'center' },
-  btnClean: { padding: '12px 24px', backgroundColor: '#34c759', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
-  btnDirty: { padding: '12px 24px', backgroundColor: '#ff3b30', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
+  btnUndamaged: { padding: '12px 24px', backgroundColor: '#34c759', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
+  btnDamaged: { padding: '12px 24px', backgroundColor: '#ff3b30', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
   btnClear: { padding: '8px 16px', backgroundColor: '#8e8e93', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
   resultBox: { padding: '15px', backgroundColor: '#fff', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', color: '#333' }
 };
