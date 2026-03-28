@@ -5,6 +5,7 @@
 #include <SD.h>
 #include <FS.h>
 #include <time.h>
+#include <string> 
 
 // --- CONFIGURATION ---
 const char* ssid = "Belal's Galaxy S23 FE";
@@ -12,7 +13,7 @@ const char* password = "123456789";
 
 // SD Card Chip Select Pin (Default is usually 5 on generic ESP32)
 // Note: If using an ESP32-CAM, you typically use the SD_MMC library instead of standard SD.
-#define SD_CS_PIN 5 
+#define SD_CS_PIN 5
 
 // Time Configuration (NTP)
 const char* ntpServer = "pool.ntp.org";
@@ -68,27 +69,29 @@ void handleStream() {
 
 // --- FAKE LOG GENERATOR & SD WRITER ---
 void sendFakeLogs() {
-  if (millis() - lastLogTime > 2000) {
+  if (millis() - lastLogTime > 5000) {
     // 1. Get the current time
-    struct tm timeinfo;
-    char timeStringBuff[50];
+    //struct tm timeinfo;
+    //char timeStringBuff[50];
     
-    if(!getLocalTime(&timeinfo)){
-      strcpy(timeStringBuff, "Time Not Synced");
-    } else {
+    //if(!getLocalTime(&timeinfo)){
+      //strcpy(timeStringBuff, "Time Not Synced");
+    //} else {
       // Format: YYYY-MM-DD HH:MM:SS
-      strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
-    }
+      //strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    //}
 
     // 2. Create the JSON log
-    String mockLog = "{\"timestamp\":\"" + String(timeStringBuff) + "\", \"level\":\"INFO\", \"message\":\"System nominal. Temp: " + String(random(20, 30)) + "C\"}";
+    //String mockLog = "{\"timestamp\":\"" + String(timeStringBuff) + "\", \"level\":\"INFO\", \"message\":\"System nominal. Temp: " + String(random(20, 30)) + "C\"}";
+    String standbyLog = "Standby...";
     
     // 3. Send to App via WebSocket
-    webSocket.broadcastTXT(mockLog);
-    Serial.println("Sent & Saved Log: " + mockLog);
+    //webSocket.broadcastTXT(standbyLog);
+    Serial.println("Sent & Saved Log: " + standbyLog);
+    broadcastAndSave(standbyLog);
     
     // 4. Save to SD Card
-    appendLogToSD(timeStringBuff, mockLog);
+    //appendLogToSD(timeStringBuff, standbyLog);
     
     lastLogTime = millis();
   }
@@ -113,12 +116,83 @@ void appendLogToSD(const char* timeStamp, String logData) {
   file.close();
 }
 
+// --- WEBSOCKET EVENT HANDLER (Receiving Commands) ---
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] App Disconnected\n", num);
+      break;
+      
+    case WStype_CONNECTED:
+      Serial.printf("[%u] App Connected!\n", num);
+      break;
+      
+    case WStype_TEXT:
+      // We received a text message from the app!
+      // Convert the raw payload bytes into a standard String
+      String command = String((char*)payload);
+      Serial.printf("[%u] Received command from app: %s\n", num, command.c_str());
+
+      // --- COMMAND LOGIC ---
+      if (command == "START_INSPECTION") {
+        inspectionRoutine();
+      } else {
+        Serial.println("Unknown command received.");
+      }
+      break;
+  }
+}
+
+void inspectionRoutine(){
+  broadcastAndSave("Inspection starting.");
+  broadcastAndSave("Beginning plate analysis:");
+  int i;
+  for (i=0; i<401; i++){
+    String log = {"Cleaning plate " + String(i) + "/400 - healthy."};
+    broadcastAndSave(log);
+  }
+  broadcastAndSave("Inspection complete.");
+}
+
+void broadcastAndSave(String logMessage){
+  struct tm timeinfo;
+  char timeStringBuff[50];
+  
+  if(!getLocalTime(&timeinfo)){
+    strcpy(timeStringBuff, "Time Not Synced");
+  } else {
+    // Format: YYYY-MM-DD HH:MM:SS
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  }
+
+  // 2. Broadcast the message instantly to your App via WebSocket
+  webSocket.broadcastTXT(logMessage);
+
+  // 3. Save it to the SD card with the timestamp prepended
+  File file = SD.open("/logs.txt", FILE_APPEND);
+  if(file){
+    file.print("[");
+    file.print(timeStringBuff);
+    file.print("] ");
+    file.println(logMessage);
+    file.close();
+    
+    // Print to Serial monitor so you can see it working
+    Serial.println("Logged & Saved: " + logMessage);
+  } else {
+    Serial.println("Broadcasted, but FAILED to save to SD card: " + logMessage);
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
   // 1. Initialize SD Card FIRST
   Serial.println("\nInitializing SD card...");
+
+  pinMode(19, INPUT_PULLUP);
+
   // Force the SPI bus to initialize on the exact pins, then slow it down to 4MHz
   SPI.begin(18, 19, 23, SD_CS_PIN); 
   if(!SD.begin(SD_CS_PIN, SPI, 4000000)){
@@ -148,6 +222,7 @@ void setup() {
 
   // 4. Start Servers
   webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
   server.on("/stream", handleStream);
   server.begin();
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import reactLogo from "./assets/react.svg";
 import { Search, Wrench, AlertTriangle, Camera, Home, BarChart2, Settings } from "lucide-react";
@@ -172,6 +172,58 @@ export default function App() {
   const [isInspecting, setIsInspecting] = useState(false);
   const [inspectionTimeLeft, setInspectionTimeLeft] = useState(0);
 
+  // App-level WebSocket and Logs state
+  const [logs, setLogs] = useState([
+    "[System] Initializing network stream...",
+    "[System] Waiting for Wi-Fi connection..."
+  ]);
+  const wsRef = useRef(null);
+
+  useEffect(() => {
+    const ws = new WebSocket("ws://172.30.181.173:82");
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setLogs(prev => {
+        const next = [...prev, "[System] WebSocket connected to ESP32."];
+        return next.length > 100 ? next.slice(next.length - 100) : next;
+      });
+    };
+
+    ws.onmessage = (event) => {
+      let messageEntry = event.data;
+      try {
+        const parsed = JSON.parse(event.data);
+        if (parsed.level && parsed.message) {
+          messageEntry = `[${parsed.level}] ${parsed.message}`;
+        }
+      } catch (e) { }
+
+      setLogs((prevLogs) => {
+        const nextLogs = [...prevLogs, messageEntry];
+        return nextLogs.length > 100 ? nextLogs.slice(nextLogs.length - 100) : nextLogs;
+      });
+    };
+
+    ws.onclose = () => {
+      setLogs(prev => {
+        const next = [...prev, "[System] WebSocket disconnected."];
+        return next.length > 100 ? next.slice(next.length - 100) : next;
+      });
+    };
+
+    ws.onerror = () => {
+      setLogs(prev => {
+        const next = [...prev, "[System] WebSocket connection error."];
+        return next.length > 100 ? next.slice(next.length - 100) : next;
+      });
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   const handleSetRobotMode = (mode) => {
     if (isInspecting) return;
     setRobotMode(mode);
@@ -179,6 +231,10 @@ export default function App() {
       setIsInspecting(true);
       setInspectionTimeLeft(5); // 5 sec inspection timer
       setActiveTab('camera');
+      
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send("START_INSPECTION");
+      }
     }
   };
 
@@ -196,11 +252,11 @@ export default function App() {
   // Router function to render the correct component
   const renderContent = () => {
     switch (activeTab) {
-      case 'camera': return <CameraPage />;
+      case 'camera': return <CameraPage logs={logs} />;
       case 'home': return <HomePage />;
       case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
-      case 'settings': return <AiTrainingPage />;
-      default: return <HomePage />;
+      case 'settings': return <SettingsPage />;
+      default: return <CameraPage logs={logs} />;
     }
   };
 
