@@ -180,47 +180,74 @@ export default function App() {
   const wsRef = useRef(null);
 
   useEffect(() => {
-    const ws = new WebSocket("ws://172.30.181.173:82");
-    wsRef.current = ws;
+    let reconnectTimeout = null;
+    let pingInterval = null;
 
-    ws.onopen = () => {
-      setLogs(prev => {
-        const next = [...prev, "[System] WebSocket connected to ESP32."];
-        return next.length > 100 ? next.slice(next.length - 100) : next;
-      });
+    const connectToWebSocket = () => {
+      const ws = new WebSocket("ws://172.30.181.173:82");
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setLogs(prev => {
+          const next = [...prev, "[System] WebSocket connected to ESP32."];
+          return next.length > 100 ? next.slice(next.length - 100) : next;
+        });
+
+        // Actively send a payload every 3s to break half-open invisible drops
+        pingInterval = setInterval(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send("PING");
+          }
+        }, 3000);
+      };
+
+      ws.onmessage = (event) => {
+        let messageEntry = event.data;
+        try {
+          const parsed = JSON.parse(event.data);
+          if (parsed.level && parsed.message) {
+            messageEntry = `[${parsed.level}] ${parsed.message}`;
+          }
+        } catch (e) { }
+
+        setLogs((prevLogs) => {
+          const nextLogs = [...prevLogs, messageEntry];
+          return nextLogs.length > 100 ? nextLogs.slice(nextLogs.length - 100) : nextLogs;
+        });
+      };
+
+      ws.onclose = () => {
+        if (pingInterval) clearInterval(pingInterval);
+
+        setLogs(prev => {
+          const next = [...prev, "[System] WebSocket disconnected. Attempting to reconnect in 3s..."];
+          return next.length > 100 ? next.slice(next.length - 100) : next;
+        });
+        
+        // Attempt to reconnect after 3 seconds
+        reconnectTimeout = setTimeout(() => {
+          connectToWebSocket();
+        }, 3000);
+      };
+
+      ws.onerror = () => {
+        setLogs(prev => {
+          const next = [...prev, "[System] WebSocket connection error."];
+          return next.length > 100 ? next.slice(next.length - 100) : next;
+        });
+      };
     };
 
-    ws.onmessage = (event) => {
-      let messageEntry = event.data;
-      try {
-        const parsed = JSON.parse(event.data);
-        if (parsed.level && parsed.message) {
-          messageEntry = `[${parsed.level}] ${parsed.message}`;
-        }
-      } catch (e) { }
-
-      setLogs((prevLogs) => {
-        const nextLogs = [...prevLogs, messageEntry];
-        return nextLogs.length > 100 ? nextLogs.slice(nextLogs.length - 100) : nextLogs;
-      });
-    };
-
-    ws.onclose = () => {
-      setLogs(prev => {
-        const next = [...prev, "[System] WebSocket disconnected."];
-        return next.length > 100 ? next.slice(next.length - 100) : next;
-      });
-    };
-
-    ws.onerror = () => {
-      setLogs(prev => {
-        const next = [...prev, "[System] WebSocket connection error."];
-        return next.length > 100 ? next.slice(next.length - 100) : next;
-      });
-    };
+    connectToWebSocket();
 
     return () => {
-      ws.close();
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      if (pingInterval) clearInterval(pingInterval);
+      if (wsRef.current) {
+        // Remove the close listener so we don't attempt to reconnect on unmount
+        wsRef.current.onclose = null; 
+        wsRef.current.close();
+      }
     };
   }, []);
 
