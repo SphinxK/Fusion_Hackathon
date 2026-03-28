@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Wifi } from 'lucide-react';
-
+const IP_ADDRESS = "10.207.5.199:8080";
 
 export default function CameraPage({ logs }) {
   const logEndRef = useRef(null);
@@ -14,15 +14,15 @@ export default function CameraPage({ logs }) {
     <div className="camera-container">
       <h2>Live Camera</h2>
       <img
-        src="http://10.207.5.199:8080/video"
+        src={`http://${IP_ADDRESS}/video`}
         alt="Camera Stream"
         className="video-feed"
         onError={(e) => {
           // Fallback to root or /stream if the default Android IP webcam /video path isn't right
           if (e.target.src.includes("/video")) {
-            e.target.src = "http://10.207.5.199:8080/";
+            e.target.src = `http://${IP_ADDRESS}/`;
           } else if (!e.target.src.includes("/stream")) {
-            e.target.src = "http://10.207.5.199:8080/stream";
+            e.target.src = `http://${IP_ADDRESS}/stream`;
           }
         }}
       />

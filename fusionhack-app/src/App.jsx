@@ -4,6 +4,7 @@ import reactLogo from "./assets/react.svg";
 import { Search, Wrench, AlertTriangle, Camera, Home, BarChart2, Settings } from "lucide-react";
 import CameraPage from "./camera";
 import ArmSimulation from "./ArmSimulation";
+import AiTrainingPage from './AiTrainingPage';
 import "./App.css";
 
 const HomePage = () => {
@@ -27,7 +28,7 @@ const HomePage = () => {
             { id: 3, name: '3. Claw' },
             { id: 4, name: '4. Drill' }
           ].map(tool => (
-            <button 
+            <button
               key={tool.id}
               onClick={() => setActiveTool(tool.id)}
               style={{
@@ -163,7 +164,6 @@ const DashboardPage = ({ robotMode, setRobotMode, isInspecting }) => (
     </div>
   </div>
 );
-const SettingsPage = () => <div className="placeholder"><h2>Settings</h2></div>;
 
 // 3. The Main App Container
 export default function App() {
@@ -255,7 +255,7 @@ export default function App() {
       case 'camera': return <CameraPage logs={logs} />;
       case 'home': return <HomePage />;
       case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
-      case 'settings': return <SettingsPage />;
+      case 'settings': return <AiTrainingPage />;
       default: return <CameraPage logs={logs} />;
     }
   };
@@ -306,7 +306,7 @@ export default function App() {
           onClick={() => setActiveTab('settings')}
           disabled={isInspecting}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Settings size={18} /> Settings</span>
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Settings size={18} /> AI Training</span>
         </button>
       </nav>
     </main>
