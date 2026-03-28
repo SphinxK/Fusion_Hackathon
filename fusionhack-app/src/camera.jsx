@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Wifi } from 'lucide-react';
 
 export default function CameraPage() {
   const videoRef = useRef(null);
@@ -49,7 +50,7 @@ export default function CameraPage() {
       {/* Network Log Section */}
       <div className="log-container">
         <div className="log-header">
-          <h3>📡 Wi-Fi Logs</h3>
+          <h3><Wifi size={24} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Wi-Fi Logs</h3>
           <span className="log-status pulse">Listening</span>
         </div>
         <div className="log-window">

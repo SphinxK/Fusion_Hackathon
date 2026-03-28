@@ -1,53 +1,12 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import reactLogo from "./assets/react.svg";
+import { Search, Wrench, AlertTriangle, Camera, Home, BarChart2, Settings } from "lucide-react";
 import CameraPage from "./camera";
 import "./App.css";
 
 // 1. We move the Tauri boilerplate into the HomePage so it doesn't clutter the other tabs!
-const HomePage = () => {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
-
-  return (
-    <div className="container">
-      <h1>Welcome to Tauri + React</h1>
-      <div className="row">
-        <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank" rel="noreferrer">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </div>
-  );
-};
+const HomePage = () => {};
 
 // 2. Simple placeholder components
 const DashboardPage = ({ robotMode, setRobotMode, isInspecting }) => (
@@ -70,13 +29,13 @@ const DashboardPage = ({ robotMode, setRobotMode, isInspecting }) => (
     <div className="mode-content">
       {robotMode === 'inspection' && (
         <div className="menu-placeholder">
-          <h3>🔍 Inspection Menu</h3>
+          <h3><Search size={24} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Inspection Menu</h3>
           <p>Controls and sensors for inspection mode will appear here.</p>
         </div>
       )}
       {robotMode === 'maintenance' && (
         <div className="maintenance-menu">
-          <h3>🔧 Maintenance Tasks</h3>
+          <h3><Wrench size={24} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Maintenance Tasks</h3>
           <div className="task-grid">
             <button className="task-button" onClick={() => {}}>1. Tile Replace</button>
             <button className="task-button" onClick={() => {}}>2. Radiation Cleaning</button>
@@ -136,7 +95,7 @@ export default function App() {
         <h2 className="app-title">Robot Control</h2>
         {isInspecting && (
           <div className="inspection-banner" style={{ background: '#eab308', color: '#000', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px' }}>⚠️</span>
+            <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}><AlertTriangle size={18} /></span>
             Inspecting... {inspectionTimeLeft}s
           </div>
         )}
@@ -154,28 +113,28 @@ export default function App() {
           onClick={() => setActiveTab('camera')}
           disabled={isInspecting}
         >
-          📷 Camera
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Camera size={18} /> Camera</span>
         </button>
         <button
           className={activeTab === 'home' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('home')}
           disabled={isInspecting}
         >
-          🏠 Home
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Home size={18} /> Home</span>
         </button>
         <button
           className={activeTab === 'dashboard' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('dashboard')}
           disabled={isInspecting}
         >
-          📊 Dash
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><BarChart2 size={18} /> Dash</span>
         </button>
         <button
           className={activeTab === 'settings' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('settings')}
           disabled={isInspecting}
         >
-          ⚙️ Settings
+          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Settings size={18} /> Settings</span>
         </button>
       </nav>
     </main>
