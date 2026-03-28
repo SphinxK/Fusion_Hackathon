@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import reactLogo from "./assets/react.svg";
-import CameraPage from './CameraPage';
+import CameraPage from "./camera";
 import "./App.css";
 
 // 1. We move the Tauri boilerplate into the HomePage so it doesn't clutter the other tabs!
