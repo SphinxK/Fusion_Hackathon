@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Wifi } from 'lucide-react';
 
 
 export default function CameraPage() {
