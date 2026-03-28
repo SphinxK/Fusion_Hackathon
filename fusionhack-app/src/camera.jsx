@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
+
 export default function CameraPage() {
   const [logs, setLogs] = useState([
     "[System] Initializing network stream...",
@@ -25,14 +26,14 @@ export default function CameraPage() {
 
     ws.onmessage = (event) => {
       let messageEntry = event.data;
-      
+
       // Try to parse the standard ESP32 log format we made
       try {
         const parsed = JSON.parse(event.data);
         if (parsed.level && parsed.message) {
           messageEntry = `[${parsed.level}] ${parsed.message}`;
         }
-      } catch (e) {}
+      } catch (e) { }
 
       setLogs((prevLogs) => {
         const nextLogs = [...prevLogs, messageEntry];
@@ -79,7 +80,7 @@ export default function CameraPage() {
       {/* Network Log Section */}
       <div className="log-container">
         <div className="log-header">
-          <h3>📡 Wi-Fi Logs</h3>
+          <h3><Wifi size={24} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Wi-Fi Logs</h3>
           <span className="log-status pulse">Listening</span>
         </div>
         <div className="log-window">
