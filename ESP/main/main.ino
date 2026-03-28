@@ -5,6 +5,7 @@
 #include <SD.h>
 #include <FS.h>
 #include <time.h>
+#include <string> 
 
 // --- CONFIGURATION ---
 const char* ssid = "Belal's Galaxy S23 FE";
@@ -145,10 +146,12 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 void inspectionRoutine(){
   broadcastAndSave("Inspection starting.");
   broadcastAndSave("Beginning plate analysis:");
+  int i;
   for (i=0; i<401; i++){
-    String log = 
-    broadcastAndSave("")
+    String log = {"Cleaning plate " + String(i) + "/400 - healthy."};
+    broadcastAndSave(log);
   }
+  broadcastAndSave("Inspection complete.");
 }
 
 void broadcastAndSave(String logMessage){
