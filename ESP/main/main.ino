@@ -12,7 +12,7 @@ const char* password = "123456789";
 
 // SD Card Chip Select Pin (Default is usually 5 on generic ESP32)
 // Note: If using an ESP32-CAM, you typically use the SD_MMC library instead of standard SD.
-#define SD_CS_PIN 5 
+#define SD_CS_PIN 5
 
 // Time Configuration (NTP)
 const char* ntpServer = "pool.ntp.org";
@@ -68,7 +68,7 @@ void handleStream() {
 
 // --- FAKE LOG GENERATOR & SD WRITER ---
 void sendFakeLogs() {
-  if (millis() - lastLogTime > 2000) {
+  if (millis() - lastLogTime > 5000) {
     // 1. Get the current time
     struct tm timeinfo;
     char timeStringBuff[50];
@@ -81,7 +81,8 @@ void sendFakeLogs() {
     }
 
     // 2. Create the JSON log
-    String mockLog = "{\"timestamp\":\"" + String(timeStringBuff) + "\", \"level\":\"INFO\", \"message\":\"System nominal. Temp: " + String(random(20, 30)) + "C\"}";
+    //String mockLog = "{\"timestamp\":\"" + String(timeStringBuff) + "\", \"level\":\"INFO\", \"message\":\"System nominal. Temp: " + String(random(20, 30)) + "C\"}";
+    String mockLog = "Standby...";
     
     // 3. Send to App via WebSocket
     webSocket.broadcastTXT(mockLog);
@@ -113,12 +114,52 @@ void appendLogToSD(const char* timeStamp, String logData) {
   file.close();
 }
 
+// --- WEBSOCKET EVENT HANDLER (Receiving Commands) ---
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+  switch(type) {
+    case WStype_DISCONNECTED:
+      Serial.printf("[%u] App Disconnected\n", num);
+      break;
+      
+    case WStype_CONNECTED:
+      Serial.printf("[%u] App Connected!\n", num);
+      break;
+      
+    case WStype_TEXT:
+      // We received a text message from the app!
+      // Convert the raw payload bytes into a standard String
+      String command = String((char*)payload);
+      Serial.printf("[%u] Received command from app: %s\n", num, command.c_str());
+
+      // --- COMMAND LOGIC ---
+      if (command == "TURN_ON_LIGHT") {
+        Serial.println("Action: Turning on the LED!");
+        // digitalWrite(LED_PIN, HIGH);
+      } 
+      else if (command == "TURN_OFF_LIGHT") {
+        Serial.println("Action: Turning off the LED!");
+        // digitalWrite(LED_PIN, LOW);
+      }
+      else if (command == "RESET_LOGS") {
+        Serial.println("Action: App requested to clear logs.");
+        // Add logic to wipe the SD card file here
+      }
+      else {
+        Serial.println("Unknown command received.");
+      }
+      break;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
 
   // 1. Initialize SD Card FIRST
   Serial.println("\nInitializing SD card...");
+
+  pinMode(19, INPUT_PULLUP);
+
   // Force the SPI bus to initialize on the exact pins, then slow it down to 4MHz
   SPI.begin(18, 19, 23, SD_CS_PIN); 
   if(!SD.begin(SD_CS_PIN, SPI, 4000000)){
