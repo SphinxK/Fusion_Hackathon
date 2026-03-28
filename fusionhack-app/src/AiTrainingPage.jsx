@@ -200,6 +200,82 @@ export default function AiTrainingPage() {
     }
   };
 
+  const exportModel = async () => {
+    if (!classifierRef.current || classifierRef.current.getNumClasses() === 0) {
+      alert("No model data to export.");
+      return;
+    }
+    try {
+      const dataset = classifierRef.current.getClassifierDataset();
+      const datasetObj = {};
+      Object.keys(dataset).forEach(key => {
+        const tensor = dataset[key];
+        datasetObj[key] = {
+          data: Array.from(tensor.dataSync()),
+          shape: tensor.shape
+        };
+      });
+      const exportData = {
+        modelData: datasetObj,
+        countsData: trainingCounts
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ai_plate_model_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export error:", e);
+      alert("Failed to export model.");
+    }
+  };
+
+  const importModel = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const importData = JSON.parse(text);
+      if (!importData || !importData.modelData || !importData.countsData) {
+        throw new Error("Invalid model file structure.");
+      }
+
+      // Recreate classifier safely
+      try { classifierRef.current.dispose(); } catch(err){}
+      classifierRef.current = knnClassifier.create();
+
+      const datasetObj = importData.modelData;
+      const dataset = {};
+      Object.keys(datasetObj).forEach(key => {
+        dataset[key] = tf.tensor(datasetObj[key].data, datasetObj[key].shape);
+      });
+      classifierRef.current.setClassifierDataset(dataset);
+      
+      setTrainingCounts(importData.countsData);
+      
+      // Save it to DB automatically on import
+      await saveToDB('knnModel', datasetObj);
+      await saveToDB('knnCounts', importData.countsData);
+      
+      setPrediction("Awaiting Data...");
+      setConfidence(0);
+      alert("Model imported and saved successfully!");
+    } catch (err) {
+      console.error("Import error:", err);
+      if (!classifierRef.current) classifierRef.current = knnClassifier.create();
+      alert("Failed to import model: " + err.message);
+    }
+    
+    // Reset file input
+    e.target.value = null;
+  };
+
   return (
     <div className="camera-container">
       <h2>AI Plate Inspection</h2>
@@ -242,11 +318,21 @@ export default function AiTrainingPage() {
 
           <div style={styles.buttonRow}>
             <button style={styles.btnSave} onClick={saveModel}>
-              Save Model
+              Save to Browser
             </button>
             <button style={styles.btnClear} onClick={clearModel}>
-              Clear Saved Model
+              Clear Model
             </button>
+          </div>
+
+          <div style={styles.buttonRow}>
+            <button style={styles.btnExport} onClick={exportModel}>
+              Export to File
+            </button>
+            <label style={styles.btnImport}>
+              Import from File
+              <input type="file" accept=".json" style={{ display: 'none' }} onChange={importModel} />
+            </label>
           </div>
 
           <div style={styles.resultBox}>
@@ -262,10 +348,12 @@ export default function AiTrainingPage() {
 // Simple inline styles for the AI controls
 const styles = {
   controls: { marginTop: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '15px' },
-  buttonRow: { display: 'flex', gap: '10px', justifyContent: 'center' },
+  buttonRow: { display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' },
   btnUndamaged: { padding: '12px 24px', backgroundColor: '#34c759', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
   btnDamaged: { padding: '12px 24px', backgroundColor: '#ff3b30', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
   btnSave: { padding: '8px 16px', backgroundColor: '#007aff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
   btnClear: { padding: '8px 16px', backgroundColor: '#8e8e93', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
+  btnExport: { padding: '8px 16px', backgroundColor: '#5ac8fa', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
+  btnImport: { padding: '8px 16px', backgroundColor: '#ff9500', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', display: 'inline-block' },
   resultBox: { padding: '15px', backgroundColor: '#fff', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', color: '#333' }
 };
