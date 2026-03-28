@@ -6,7 +6,6 @@ import CameraPage from "./camera";
 import ArmSimulation from "./ArmSimulation";
 import "./App.css";
 
-// 1. We move the Tauri boilerplate into the HomePage so it doesn't clutter the other tabs!
 const HomePage = () => {
   const [az, setAz] = useState(0);
   const [th2, setTh2] = useState(-45);
@@ -15,80 +14,111 @@ const HomePage = () => {
   const [a1, setA1] = useState(5);
   const [a2, setA2] = useState(4);
   const [a3, setA3] = useState(2);
+  const [activeTool, setActiveTool] = useState(1);
 
   return (
     <div style={{ display: 'flex', height: '100%', width: '100%' }}>
+      <div style={{ width: '250px', backgroundColor: '#2a2a35', padding: '20px', borderRight: '1px solid #444', overflowY: 'auto' }}>
+        <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Tool Heads</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { id: 1, name: '1. Vacuum Cleaner' },
+            { id: 2, name: '2. Laser Duster' },
+            { id: 3, name: '3. Claw' },
+            { id: 4, name: '4. Drill' }
+          ].map(tool => (
+            <button 
+              key={tool.id}
+              onClick={() => setActiveTool(tool.id)}
+              style={{
+                padding: '12px',
+                background: activeTool === tool.id ? '#4c99f2' : '#3c3c4a',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                fontWeight: activeTool === tool.id ? 'bold' : 'normal',
+                transition: 'background 0.2s'
+              }}
+            >
+              {tool.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 3D Visualizer Container */}
       <div style={{ flex: 1, backgroundColor: '#1a1a1a', position: 'relative' }}>
-          <ArmSimulation
-            az={az} th2={th2} th3={th3}
-            d1={d1} a1={a1} a2={a2} a3={a3}
-          />
-          <div style={{ position: 'absolute', top: 16, left: 16, color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>
-            3-DOF Inverted Arm Simulation
-          </div>
+        <ArmSimulation
+          az={az} th2={th2} th3={th3}
+          d1={d1} a1={a1} a2={a2} a3={a3}
+        />
+        <div style={{ position: 'absolute', top: 16, left: 16, color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>
+          3-DOF Inverted Arm Simulation
+        </div>
       </div>
-      
+
       {/* Control Panel */}
       <div style={{ width: '300px', backgroundColor: '#2a2a35', padding: '20px', overflowY: 'auto', borderLeft: '1px solid #444', display: 'flex', flexDirection: 'column' }}>
-         <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Simulation Controls</h3>
-         
-         <div style={{ marginBottom: '24px' }}>
-            <h4 style={{ color: '#4c99f2', margin: '0 0 10px 0' }}>Joint Angles</h4>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ccc', fontSize: '0.9rem', marginBottom: '4px' }}>
-                <label>Joint 1 (Azimuth)</label>
-                <span>{az}°</span>
-              </div>
-              <input type="range" className="slider slider-blue" min="-180" max="180" value={az} onChange={(e) => setAz(Number(e.target.value))} style={{ width: '100%', accentColor: '#4c99f2' }} />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#40cc8c', fontSize: '0.9rem', marginBottom: '4px' }}>
-                <label>Joint 2 (Shoulder)</label>
-                <span>{th2}°</span>
-              </div>
-              <input type="range" className="slider slider-green" min="-135" max="135" value={th2} onChange={(e) => setTh2(Number(e.target.value))} style={{ width: '100%', accentColor: '#40cc8c' }} />
-            </div>
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f2a640', fontSize: '0.9rem', marginBottom: '4px' }}>
-                <label>Joint 3 (Elbow)</label>
-                <span>{th3}°</span>
-              </div>
-              <input type="range" className="slider slider-orange" min="-135" max="135" value={th3} onChange={(e) => setTh3(Number(e.target.value))} style={{ width: '100%', accentColor: '#f2a640' }} />
-            </div>
-         </div>
+        <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Simulation Controls</h3>
 
-         <div style={{ marginBottom: '24px' }}>
-            <h4 style={{ color: '#aaa', margin: '0 0 10px 0' }}>Link Lengths</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <div>
-                <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Ceiling (d1)</label>
-                <input type="number" value={d1} onChange={(e) => setD1(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Link 1 (a1)</label>
-                <input type="number" value={a1} onChange={(e) => setA1(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Link 2 (a2)</label>
-                <input type="number" value={a2} onChange={(e) => setA2(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
-              </div>
-              <div>
-                <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Tool (a3)</label>
-                <input type="number" value={a3} onChange={(e) => setA3(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
-              </div>
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ color: '#4c99f2', margin: '0 0 10px 0' }}>Joint Angles</h4>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ccc', fontSize: '0.9rem', marginBottom: '4px' }}>
+              <label>Joint 1 (Azimuth)</label>
+              <span>{az}°</span>
             </div>
-         </div>
-         
-         <div style={{ flexGrow: 1 }} />
-         <button 
-            style={{ width: '100%', padding: '10px', background: '#444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 'bold' }}
-            onMouseOver={(e) => e.target.style.background = '#555'}
-            onMouseOut={(e) => e.target.style.background = '#444'}
-            onClick={() => { setAz(0); setTh2(-45); setTh3(60); }}
-         >
-           Reset Angles
-         </button>
+            <input type="range" className="slider slider-blue" min="-180" max="180" value={az} onChange={(e) => setAz(Number(e.target.value))} style={{ width: '100%', accentColor: '#4c99f2' }} />
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#40cc8c', fontSize: '0.9rem', marginBottom: '4px' }}>
+              <label>Joint 2 (Shoulder)</label>
+              <span>{th2}°</span>
+            </div>
+            <input type="range" className="slider slider-green" min="-135" max="135" value={th2} onChange={(e) => setTh2(Number(e.target.value))} style={{ width: '100%', accentColor: '#40cc8c' }} />
+          </div>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f2a640', fontSize: '0.9rem', marginBottom: '4px' }}>
+              <label>Joint 3 (Elbow)</label>
+              <span>{th3}°</span>
+            </div>
+            <input type="range" className="slider slider-orange" min="-135" max="135" value={th3} onChange={(e) => setTh3(Number(e.target.value))} style={{ width: '100%', accentColor: '#f2a640' }} />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ color: '#aaa', margin: '0 0 10px 0' }}>Link Lengths</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>
+              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Ceiling (d1)</label>
+              <input type="number" value={d1} onChange={(e) => setD1(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Link 1 (a1)</label>
+              <input type="number" value={a1} onChange={(e) => setA1(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Link 2 (a2)</label>
+              <input type="number" value={a2} onChange={(e) => setA2(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+            </div>
+            <div>
+              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Tool (a3)</label>
+              <input type="number" value={a3} onChange={(e) => setA3(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ flexGrow: 1 }} />
+        <button
+          style={{ width: '100%', padding: '10px', background: '#444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 'bold' }}
+          onMouseOver={(e) => e.target.style.background = '#555'}
+          onMouseOut={(e) => e.target.style.background = '#444'}
+          onClick={() => { setAz(0); setTh2(-45); setTh3(60); }}
+        >
+          Reset Angles
+        </button>
       </div>
     </div>
   );
@@ -123,10 +153,10 @@ const DashboardPage = ({ robotMode, setRobotMode, isInspecting }) => (
         <div className="maintenance-menu">
           <h3><Wrench size={24} style={{ marginRight: '8px', verticalAlign: 'middle' }} /> Maintenance Tasks</h3>
           <div className="task-grid">
-            <button className="task-button" onClick={() => {}}>1. Tile Replace</button>
-            <button className="task-button" onClick={() => {}}>2. Radiation Cleaning</button>
-            <button className="task-button" onClick={() => {}}>3. Magnet Removal</button>
-            <button className="task-button" onClick={() => {}}>4. Manual Operator Control</button>
+            <button className="task-button" onClick={() => { }}>1. Tile Replace</button>
+            <button className="task-button" onClick={() => { }}>2. Radiation Cleaning</button>
+            <button className="task-button" onClick={() => { }}>3. Magnet Removal</button>
+            <button className="task-button" onClick={() => { }}>4. Manual Operator Control</button>
           </div>
         </div>
       )}
