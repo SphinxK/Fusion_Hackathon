@@ -75,9 +75,14 @@ const DashboardPage = ({ robotMode, setRobotMode, isInspecting }) => (
         </div>
       )}
       {robotMode === 'maintenance' && (
-        <div className="menu-placeholder">
-          <h3>🔧 Maintenance Menu</h3>
-          <p>Diagnostics, calibration, and repair options will appear here.</p>
+        <div className="maintenance-menu">
+          <h3>🔧 Maintenance Tasks</h3>
+          <div className="task-grid">
+            <button className="task-button" onClick={() => {}}>1. Tile Replace</button>
+            <button className="task-button" onClick={() => {}}>2. Radiation Cleaning</button>
+            <button className="task-button" onClick={() => {}}>3. Magnet Removal</button>
+            <button className="task-button" onClick={() => {}}>4. Manual Operator Control</button>
+          </div>
         </div>
       )}
     </div>
