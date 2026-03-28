@@ -8,8 +8,8 @@
 
 :root {
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
+  font-size: clamp(16px, 1.2vw, 24px);
+  line-height: 1.5;
   font-weight: 400;
 
   color: #0f0f0f;
@@ -139,7 +139,7 @@ button {
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 65px;
+  height: 85px;
   background-color: #ffffff;
   display: flex;
   justify-content: space-around;
@@ -151,7 +151,7 @@ button {
 .tab {
   background: none;
   border: none;
-  font-size: 14px;
+  font-size: 16px;
   cursor: pointer;
   color: #666;
   display: flex;
@@ -194,7 +194,7 @@ button {
 
 .app-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 700;
   color: #333;
 }
@@ -202,20 +202,21 @@ button {
 .mode-selector {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .mode-label {
-  font-size: 14px;
+  font-size: 16px;
   color: #666;
   font-weight: 500;
 }
 
 .mode-select {
-  padding: 6px 12px;
+  padding: 10px 16px;
   border-radius: 20px;
   border: none;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   background-color: #f9f9f9;
   cursor: pointer;
@@ -264,6 +265,9 @@ button {
    Page Specific Styles
 ========================================= */
 .dashboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 24px;
   height: 100%;
 }
@@ -324,7 +328,7 @@ button {
   padding: 14px 16px;
   border-radius: 8px;
   font-weight: 500;
-  text-align: left;
+  text-align: center;
   transition: all 0.2s ease;
   cursor: pointer;
   font-size: 15px;
@@ -352,13 +356,16 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 20px;
-  height: 100%;
+  padding: 24px;
+  height: calc(100vh - 180px); /* Accounting for header and homebar */
 }
 
 .video-feed {
-  width: 100%;
-  max-width: 600px;
+  width: auto;
+  aspect-ratio: 16 / 9;
+  flex: 1 1 auto;
+  min-height: 0; /* allows flex item to shrink below its minimum intrinsic content size */
+  object-fit: contain;
   background-color: #000;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -374,8 +381,8 @@ button {
 ========================================= */
 .log-container {
   width: 100%;
-  max-width: 600px;
-  margin-top: 20px;
+  flex: 0 0 30%; /* Take up 30% of the screen height */
+  margin-top: 24px;
   background-color: #1e1e1e;
   border-radius: 12px;
   overflow: hidden;
@@ -396,7 +403,7 @@ button {
 .log-header h3 {
   margin: 0;
   color: #e0e0e0;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -404,11 +411,11 @@ button {
 }
 
 .log-status {
-  font-size: 12px;
+  font-size: 16px;
   color: #4ade80;
   font-weight: bold;
   background-color: rgba(74, 222, 128, 0.15);
-  padding: 4px 8px;
+  padding: 6px 12px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -425,12 +432,11 @@ button {
 }
 
 .log-window {
-  padding: 16px;
-  min-height: 120px;
-  max-height: 200px;
+  padding: 24px;
+  flex: 1 1 auto;
   overflow-y: auto;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
+  font-size: 16px;
   color: #a0aec0;
   display: flex;
   flex-direction: column;
