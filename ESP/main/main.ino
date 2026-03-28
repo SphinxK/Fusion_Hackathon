@@ -70,26 +70,27 @@ void handleStream() {
 void sendFakeLogs() {
   if (millis() - lastLogTime > 5000) {
     // 1. Get the current time
-    struct tm timeinfo;
-    char timeStringBuff[50];
+    //struct tm timeinfo;
+    //char timeStringBuff[50];
     
-    if(!getLocalTime(&timeinfo)){
-      strcpy(timeStringBuff, "Time Not Synced");
-    } else {
+    //if(!getLocalTime(&timeinfo)){
+      //strcpy(timeStringBuff, "Time Not Synced");
+    //} else {
       // Format: YYYY-MM-DD HH:MM:SS
-      strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
-    }
+      //strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    //}
 
     // 2. Create the JSON log
     //String mockLog = "{\"timestamp\":\"" + String(timeStringBuff) + "\", \"level\":\"INFO\", \"message\":\"System nominal. Temp: " + String(random(20, 30)) + "C\"}";
-    String mockLog = "Standby...";
+    String standbyLog = "Standby...";
     
     // 3. Send to App via WebSocket
-    webSocket.broadcastTXT(mockLog);
-    Serial.println("Sent & Saved Log: " + mockLog);
+    //webSocket.broadcastTXT(standbyLog);
+    Serial.println("Sent & Saved Log: " + standbyLog);
+    broadcastAndSave(standbyLog);
     
     // 4. Save to SD Card
-    appendLogToSD(timeStringBuff, mockLog);
+    //appendLogToSD(timeStringBuff, standbyLog);
     
     lastLogTime = millis();
   }
@@ -132,22 +133,51 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       Serial.printf("[%u] Received command from app: %s\n", num, command.c_str());
 
       // --- COMMAND LOGIC ---
-      if (command == "TURN_ON_LIGHT") {
-        Serial.println("Action: Turning on the LED!");
-        // digitalWrite(LED_PIN, HIGH);
-      } 
-      else if (command == "TURN_OFF_LIGHT") {
-        Serial.println("Action: Turning off the LED!");
-        // digitalWrite(LED_PIN, LOW);
-      }
-      else if (command == "RESET_LOGS") {
-        Serial.println("Action: App requested to clear logs.");
-        // Add logic to wipe the SD card file here
-      }
-      else {
+      if (command == "START_INSPECTION") {
+        inspectionRoutine();
+      } else {
         Serial.println("Unknown command received.");
       }
       break;
+  }
+}
+
+void inspectionRoutine(){
+  broadcastAndSave("Inspection starting.");
+  broadcastAndSave("Beginning plate analysis:");
+  for (i=0; i<401; i++){
+    String log = 
+    broadcastAndSave("")
+  }
+}
+
+void broadcastAndSave(String logMessage){
+  struct tm timeinfo;
+  char timeStringBuff[50];
+  
+  if(!getLocalTime(&timeinfo)){
+    strcpy(timeStringBuff, "Time Not Synced");
+  } else {
+    // Format: YYYY-MM-DD HH:MM:SS
+    strftime(timeStringBuff, sizeof(timeStringBuff), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  }
+
+  // 2. Broadcast the message instantly to your App via WebSocket
+  webSocket.broadcastTXT(logMessage);
+
+  // 3. Save it to the SD card with the timestamp prepended
+  File file = SD.open("/logs.txt", FILE_APPEND);
+  if(file){
+    file.print("[");
+    file.print(timeStringBuff);
+    file.print("] ");
+    file.println(logMessage);
+    file.close();
+    
+    // Print to Serial monitor so you can see it working
+    Serial.println("Logged & Saved: " + logMessage);
+  } else {
+    Serial.println("Broadcasted, but FAILED to save to SD card: " + logMessage);
   }
 }
 
@@ -189,6 +219,7 @@ void setup() {
 
   // 4. Start Servers
   webSocket.begin();
+  webSocket.onEvent(webSocketEvent);
   server.on("/stream", handleStream);
   server.begin();
 }
