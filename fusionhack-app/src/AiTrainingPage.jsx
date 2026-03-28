@@ -5,6 +5,47 @@ import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
 const IP_ADDRESS = "10.207.5.199:8080";
 
+// --- Simple IndexedDB Wrapper to bypass LocalStorage limits ---
+const openDB = () => new Promise((resolve, reject) => {
+  const req = indexedDB.open("AiTrainingDB", 1);
+  req.onupgradeneeded = (e) => e.target.result.createObjectStore("models");
+  req.onsuccess = (e) => resolve(e.target.result);
+  req.onerror = () => reject(req.error);
+});
+
+const saveToDB = async (key, value) => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    if (!db.objectStoreNames.contains("models")) return reject(new Error("models store missing"));
+    const tx = db.transaction("models", "readwrite");
+    tx.objectStore("models").put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+};
+
+const loadFromDB = async (key) => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    if (!db.objectStoreNames.contains("models")) return resolve(null);
+    const tx = db.transaction("models", "readonly");
+    const req = tx.objectStore("models").get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+};
+
+const deleteFromDB = async (key) => {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    if (!db.objectStoreNames.contains("models")) return resolve();
+    const tx = db.transaction("models", "readwrite");
+    tx.objectStore("models").delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+};
+
 export default function AiTrainingPage() {
   const videoRef = useRef(null);
   const classifierRef = useRef(null);
@@ -27,18 +68,26 @@ export default function AiTrainingPage() {
         console.log("Models Loaded!");
         modelsReadyRef.current = true;
 
-        // Try to load saved model from localStorage
-        const savedModel = localStorage.getItem('knnModel');
-        const savedCounts = localStorage.getItem('knnCounts');
+        // Try to load saved model from IndexedDB
+        const savedModel = await loadFromDB('knnModel');
+        const savedCounts = await loadFromDB('knnCounts');
         if (savedModel && savedCounts) {
           try {
-            const datasetObj = JSON.parse(savedModel);
+            const datasetObj = savedModel;
             const dataset = {};
             Object.keys(datasetObj).forEach(key => {
-              dataset[key] = tf.tensor(datasetObj[key].data, datasetObj[key].shape);
+              let newKey = key;
+              if (key === 'clean') newKey = 'undamaged';
+              if (key === 'dirty') newKey = 'damaged';
+              dataset[newKey] = tf.tensor(datasetObj[key].data, datasetObj[key].shape);
             });
             classifierRef.current.setClassifierDataset(dataset);
-            setTrainingCounts(JSON.parse(savedCounts));
+            
+            const parsedCounts = savedCounts;
+            setTrainingCounts({
+              undamaged: parsedCounts.undamaged !== undefined ? parsedCounts.undamaged : (parsedCounts.clean || 0),
+              damaged: parsedCounts.damaged !== undefined ? parsedCounts.damaged : (parsedCounts.dirty || 0)
+            });
             console.log("Loaded saved model from previous session!");
           } catch (e) {
             console.error("Failed to load saved model:", e);
@@ -75,54 +124,79 @@ export default function AiTrainingPage() {
     // Add those features to our custom classifier
     classifierRef.current.addExample(features, classLabel);
     
-    // Update UI counts and save to localStorage
-    setTrainingCounts(prev => {
-      const newCounts = { ...prev, [classLabel]: prev[classLabel] + 1 };
-      
-      try {
-        const dataset = classifierRef.current.getClassifierDataset();
-        const datasetObj = {};
-        Object.keys(dataset).forEach(key => {
-          const tensor = dataset[key];
-          datasetObj[key] = {
-            data: Array.from(tensor.dataSync()),
-            shape: tensor.shape
-          };
-        });
-        localStorage.setItem('knnModel', JSON.stringify(datasetObj));
-        localStorage.setItem('knnCounts', JSON.stringify(newCounts));
-      } catch (e) {
-        console.error("Failed to save model:", e);
-      }
-
-      return newCounts;
-    });
+    // Update UI counts simply (no heavy saving on every frame)
+    setTrainingCounts(prev => ({ ...prev, [classLabel]: prev[classLabel] + 1 }));
   };
 
   // Continuously look at the camera and guess what it sees
   const startPredicting = async () => {
-    if (classifierRef.current.getNumClasses() > 0) {
-      const features = mobilenetRef.current.infer(videoRef.current, true);
-      const result = await classifierRef.current.predictClass(features);
+    try {
+      if (classifierRef.current && classifierRef.current.getNumClasses() > 0) {
+        const features = mobilenetRef.current.infer(videoRef.current, true);
+        
+        // Determine K dynamically based on total examples for better confidence granularity
+        const exampleCounts = classifierRef.current.getClassExampleCount();
+        const totalExamples = Object.values(exampleCounts).reduce((a, b) => a + b, 0);
+        const k = Math.min(10, Math.max(1, totalExamples));
+        
+        const result = await classifierRef.current.predictClass(features, k);
 
-      setPrediction(result.label);
-      setConfidence(Math.round(result.confidences[result.label] * 100));
-      
-      // Memory cleanup for TensorFlow
-      features.dispose(); 
+        setPrediction(result.label);
+        setConfidence(Math.round(result.confidences[result.label] * 100));
+        
+        // Memory cleanup for TensorFlow
+        features.dispose(); 
+      }
+    } catch (e) {
+      console.warn("Skipping frame prediction:", e.message);
     }
     // Loop this function to keep guessing on the next video frame
     requestRef.current = requestAnimationFrame(startPredicting);
   };
 
-  const clearModel = () => {
-    if (classifierRef.current) {
-      classifierRef.current.clearAllClasses();
-      setTrainingCounts({ undamaged: 0, damaged: 0 });
-      localStorage.removeItem('knnModel');
-      localStorage.removeItem('knnCounts');
-      setPrediction("Awaiting Data...");
-      setConfidence(0);
+  const saveModel = async () => {
+    if (!classifierRef.current) return;
+    try {
+      const dataset = classifierRef.current.getClassifierDataset();
+      const datasetObj = {};
+      Object.keys(dataset).forEach(key => {
+        const tensor = dataset[key];
+        datasetObj[key] = {
+          data: Array.from(tensor.dataSync()),
+          shape: tensor.shape
+        };
+      });
+      await saveToDB('knnModel', datasetObj);
+      await saveToDB('knnCounts', trainingCounts);
+      alert("AI Model saved successfully! It will now persist when you leave the page.");
+    } catch (e) {
+      console.error("Failed to save model:", e);
+      alert("Failed to save model. Database error occurred.");
+    }
+  };
+
+  const clearModel = async () => {
+    try {
+      if (classifierRef.current) {
+        // We recreate instead of clearAllClasses which can hit race conditions with inference
+        try { classifierRef.current.dispose(); } catch(e){}
+        classifierRef.current = knnClassifier.create();
+        
+        setTrainingCounts({ undamaged: 0, damaged: 0 });
+        
+        try {
+          await deleteFromDB('knnModel');
+          await deleteFromDB('knnCounts');
+        } catch (dbErr) {
+          console.warn("Cleared memory, but DB clear was skipped or failed:", dbErr);
+        }
+        
+        setPrediction("Awaiting Data...");
+        setConfidence(0);
+      }
+    } catch (e) {
+      console.error("Crash prevented during model clear:", e);
+      alert("Error while clearing model. See console.");
     }
   };
 
@@ -167,6 +241,9 @@ export default function AiTrainingPage() {
           </div>
 
           <div style={styles.buttonRow}>
+            <button style={styles.btnSave} onClick={saveModel}>
+              Save Model
+            </button>
             <button style={styles.btnClear} onClick={clearModel}>
               Clear Saved Model
             </button>
@@ -188,6 +265,7 @@ const styles = {
   buttonRow: { display: 'flex', gap: '10px', justifyContent: 'center' },
   btnUndamaged: { padding: '12px 24px', backgroundColor: '#34c759', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
   btnDamaged: { padding: '12px 24px', backgroundColor: '#ff3b30', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
+  btnSave: { padding: '8px 16px', backgroundColor: '#007aff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
   btnClear: { padding: '8px 16px', backgroundColor: '#8e8e93', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
   resultBox: { padding: '15px', backgroundColor: '#fff', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', color: '#333' }
 };
