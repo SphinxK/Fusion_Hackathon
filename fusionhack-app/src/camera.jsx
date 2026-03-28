@@ -1,50 +1,27 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 
 export default function CameraPage() {
-  const videoRef = useRef(null);
-  const [error, setError] = useState(null);
   const [logs, setLogs] = useState([
-    "[System] Camera initialized.",
+    "[System] Initializing network stream...",
     "[System] Waiting for Wi-Fi connection..."
   ]);
-
-  useEffect(() => {
-    let mediaStream = null;
-
-    async function enableStream() {
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = mediaStream;
-        }
-      } catch (err) {
-        setError("Could not access the camera. Please check permissions.");
-        console.error("Camera error:", err);
-      }
-    }
-
-    enableStream();
-
-    return () => {
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, []);
 
   return (
     <div className="camera-container">
       <h2>Live Camera</h2>
-      {error ? (
-        <p className="error-text">{error}</p>
-      ) : (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="video-feed"
-        />
-      )}
+      <img
+        src="http://10.207.24.88:8080/video"
+        alt="Camera Stream"
+        className="video-feed"
+        onError={(e) => {
+          // Fallback to root or /stream if the default Android IP webcam /video path isn't right
+          if (e.target.src.includes("/video")) {
+            e.target.src = "http://10.207.24.88:8080/";
+          } else if (!e.target.src.includes("/stream")) {
+            e.target.src = "http://10.207.24.88:8080/stream";
+          }
+        }}
+      />
 
       {/* Network Log Section */}
       <div className="log-container">
