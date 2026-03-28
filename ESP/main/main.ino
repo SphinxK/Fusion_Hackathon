@@ -119,7 +119,9 @@ void setup() {
 
   // 1. Initialize SD Card FIRST
   Serial.println("\nInitializing SD card...");
-  if(!SD.begin(SD_CS_PIN)){
+  // Force the SPI bus to initialize on the exact pins, then slow it down to 4MHz
+  SPI.begin(18, 19, 23, SD_CS_PIN); 
+  if(!SD.begin(SD_CS_PIN, SPI, 4000000)){
     Serial.println("Card Mount Failed! Check wiring.");
   } else {
     Serial.println("SD Card initialized successfully.");
