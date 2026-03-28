@@ -65,7 +65,7 @@ export default function CameraPage() {
     <div className="camera-container">
       <h2>Live Camera</h2>
       <img
-        src="https://10.207.24.88:8080/video"
+        src="http://10.207.24.88:8080/video"
         alt="Camera Stream"
         className="video-feed"
         onError={(e) => {
