@@ -255,7 +255,7 @@ export default function App() {
       case 'camera': return <CameraPage logs={logs} />;
       case 'home': return <HomePage />;
       case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
-      case 'settings': return <SettingsPage />;
+      case 'settings': return <AiTrainingPage />;
       default: return <CameraPage logs={logs} />;
     }
   };
