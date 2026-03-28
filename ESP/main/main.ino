@@ -145,12 +145,15 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
 
 void inspectionRoutine(){
   broadcastAndSave("Inspection starting.");
+  delay(1000);
   broadcastAndSave("Beginning plate analysis:");
+  delay(500);
   int i;
-  for (i=0; i<401; i++){
-    String log = {"Cleaning plate " + String(i) + "/400 - healthy."};
+  for (i=0; i<101; i++){
+    String log = {"Checking plate " + String(i) + "/100 - healthy."};
     broadcastAndSave(log);
   }
+  delay(500);
   broadcastAndSave("Inspection complete.");
 }
 
