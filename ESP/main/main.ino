@@ -144,13 +144,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
           broadcastAndSave("Inspection starting...");
         }
       } 
-      else if (command == "UNDAMAGED") {
+      else if (command == "undamaged") {
         if (state == "Inspection" && waitingForApp) {
           currentPlateResult = "undamaged";
           waitingForApp = false; // This is the trigger that unpauses the loop!
         }
       } 
-      else if (command == "DAMAGED") {
+      else if (command == "damaged") {
         if (state == "Inspection" && waitingForApp) {
           currentPlateResult = "damaged";
           damagedCount++;
