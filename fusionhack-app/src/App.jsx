@@ -170,15 +170,24 @@ export default function App() {
     let reconnectTimeout = null;
     let pingInterval = null;
 
+    const appendLog = (msg) => {
+      setLogs((prevLogs) => {
+        const nextLogs = [...prevLogs, msg];
+        return nextLogs.length > 100 ? nextLogs.slice(nextLogs.length - 100) : nextLogs;
+      });
+      invoke('save_log', { log: msg }).catch(e => console.error(e));
+    };
+
+    // Save initial logs once
+    invoke('save_log', { log: "[System] Initializing network stream..." }).catch(e => console.error(e));
+    invoke('save_log', { log: "[System] Waiting for Wi-Fi connection..." }).catch(e => console.error(e));
+
     const connectToWebSocket = () => {
       const ws = new WebSocket("ws://172.30.181.173:82");
       wsRef.current = ws;
 
       ws.onopen = () => {
-        setLogs(prev => {
-          const next = [...prev, "[System] WebSocket connected to ESP32."];
-          return next.length > 100 ? next.slice(next.length - 100) : next;
-        });
+        appendLog("[System] WebSocket connected to ESP32.");
 
         // Actively send a payload every 3s to break half-open invisible drops
         pingInterval = setInterval(() => {
@@ -197,19 +206,13 @@ export default function App() {
           }
         } catch (e) { }
 
-        setLogs((prevLogs) => {
-          const nextLogs = [...prevLogs, messageEntry];
-          return nextLogs.length > 100 ? nextLogs.slice(nextLogs.length - 100) : nextLogs;
-        });
+        appendLog(messageEntry);
       };
 
       ws.onclose = () => {
         if (pingInterval) clearInterval(pingInterval);
 
-        setLogs(prev => {
-          const next = [...prev, "[System] WebSocket disconnected. Attempting to reconnect in 3s..."];
-          return next.length > 100 ? next.slice(next.length - 100) : next;
-        });
+        appendLog("[System] WebSocket disconnected. Attempting to reconnect in 3s...");
         
         // Attempt to reconnect after 3 seconds
         reconnectTimeout = setTimeout(() => {
@@ -218,10 +221,7 @@ export default function App() {
       };
 
       ws.onerror = () => {
-        setLogs(prev => {
-          const next = [...prev, "[System] WebSocket connection error."];
-          return next.length > 100 ? next.slice(next.length - 100) : next;
-        });
+        appendLog("[System] WebSocket connection error.");
       };
     };
 
