@@ -11,8 +11,6 @@
 const char* ssid = "Belal's Galaxy S23 FE";
 const char* password = "123456789";
 
-// SD Card Chip Select Pin (Default is usually 5 on generic ESP32)
-// Note: If using an ESP32-CAM, you typically use the SD_MMC library instead of standard SD.
 #define SD_CS_PIN 5
 
 // Time Configuration (NTP)
@@ -44,6 +42,9 @@ const uint8_t dummy_jpg[] = {
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
 static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
 static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+
+String plateState = "";
+bool waiting = true;
 
 // --- MOCK CAMERA STREAM HANDLER ---
 void handleStream() {
@@ -136,7 +137,13 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       // --- COMMAND LOGIC ---
       if (command == "START_INSPECTION") {
         inspectionRoutine();
-      } else {
+      } else if (command == "UNDAMAGED") {
+        plateState = "undamaged";
+        waiting = false;
+      } else if (command == "DAMAGED") {
+        plateState = "damaged";
+        waiting = false;
+      }else {
         Serial.println("Unknown command received.");
       }
       break;
@@ -149,12 +156,31 @@ void inspectionRoutine(){
   broadcastAndSave("Beginning plate analysis:");
   delay(500);
   int i;
-  for (i=0; i<101; i++){
-    String log = {"Checking plate " + String(i) + "/100 - healthy."};
+  int damaged = 0;
+  for (i=0; i<11; i++){
+    String log = {"Checking plate " + String(i) + "/10"};
     broadcastAndSave(log);
+    delay(200);
+    while (waiting);
+    if (plateState == "damaged"){
+      damaged++;
+    }
+    log = {"Plate " + String(i) + ": " + plateState};
+    broadcastAndSave(log);
+  }
+  broadcastAndSave("Plate inspection complete.");
+  delay(500);
+  broadcastAndSave("Result:");
+  String log = {"Out of 10 plates, " + String(i) + " are damaged."};
+  broadcastAndSave(log);
+  if (damaged == 0) {
+    broadcastAndSave("No recommended action.");
+  } else {
+    broadcastAndSave("Recommended action: Plate replacement.");
   }
   delay(500);
   broadcastAndSave("Inspection complete.");
+  delay(1000);
 }
 
 void broadcastAndSave(String logMessage){
