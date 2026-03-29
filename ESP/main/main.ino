@@ -43,8 +43,11 @@ static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" 
 static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
 static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
 
-String plateState = "";
-bool waiting = true;
+bool waitingForApp = false;
+int currentPlate = 1;
+int damagedCount = 0;
+String state = "Standby"; //Only standby or inspection so far
+String currentPlateResult = "";
 
 // --- MOCK CAMERA STREAM HANDLER ---
 void handleStream() {
@@ -64,12 +67,12 @@ void handleStream() {
     
     delay(100); 
     webSocket.loop(); 
-    sendFakeLogs();
+    sendStandbyLog();
   }
 }
 
 // --- FAKE LOG GENERATOR & SD WRITER ---
-void sendFakeLogs() {
+void sendStandbyLog() {
   if (millis() - lastLogTime > 5000) {
     // 1. Get the current time
     //struct tm timeinfo;
@@ -129,58 +132,68 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length
       break;
       
     case WStype_TEXT:
-      // We received a text message from the app!
-      // Convert the raw payload bytes into a standard String
       String command = String((char*)payload);
-      Serial.printf("[%u] Received command from app: %s\n", num, command.c_str());
+      Serial.printf("[%u] App Command: %s\n", num, command.c_str());
 
-      // --- COMMAND LOGIC ---
       if (command == "START_INSPECTION") {
-        inspectionRoutine();
-      } else if (command == "UNDAMAGED") {
-        plateState = "undamaged";
-        waiting = false;
-      } else if (command == "DAMAGED") {
-        plateState = "damaged";
-        waiting = false;
-      }else {
-        Serial.println("Unknown command received.");
+        if (state != "Inspection") {
+          state = "Inspection";
+          currentPlate = 1;
+          damagedCount = 0;
+          waitingForApp = false;
+          broadcastAndSave("Inspection starting...");
+        }
+      } 
+      else if (command == "undamaged") {
+        if (state == "Inspection" && waitingForApp) {
+          currentPlateResult = "undamaged";
+          waitingForApp = false; // This is the trigger that unpauses the loop!
+        }
+      } 
+      else if (command == "damaged") {
+        if (state == "Inspection" && waitingForApp) {
+          currentPlateResult = "damaged";
+          damagedCount++;
+          waitingForApp = false; // This is the trigger that unpauses the loop!
+        }
       }
       break;
   }
 }
 
 void inspectionRoutine(){
-  broadcastAndSave("Inspection starting.");
-  delay(1000);
-  broadcastAndSave("Beginning plate analysis:");
-  delay(500);
-  int i;
-  int damaged = 0;
-  for (i=0; i<11; i++){
-    String log = {"Checking plate " + String(i) + "/10"};
-    broadcastAndSave(log);
-    delay(200);
-    while (waiting);
-    if (plateState == "damaged"){
-      damaged++;
+  // --- NON-BLOCKING INSPECTION ROUTINE ---
+  if (state == "Inspection" && !waitingForApp) {
+    
+    // 1. If we just finished a plate, log the result before moving on
+    if (currentPlate > 1 && currentPlateResult != "") {
+      broadcastAndSave("Plate " + String(currentPlate - 1) + ": " + currentPlateResult);
+      currentPlateResult = ""; // Reset for the next plate
     }
-    log = {"Plate " + String(i) + ": " + plateState};
-    broadcastAndSave(log);
+
+    // 2. Check if we are completely done (assuming 10 plates)
+    if (currentPlate > 10) {
+      broadcastAndSave("Plate inspection complete.");
+      broadcastAndSave("Result: Out of 10 plates, " + String(damagedCount) + " are damaged.");
+      
+      if (damagedCount == 0) {
+        broadcastAndSave("Recommended action: No action.");
+      } else {
+        broadcastAndSave("Recommended action: Plate replacement.");
+      }
+      broadcastAndSave("Inspection complete.");
+      
+      state = "Standby"; // End the routine
+    } 
+    // 3. Otherwise, ask the app for the next plate and WAIT
+    else {
+      broadcastAndSave("Checking plate " + String(currentPlate) + "/10");
+      broadcastAndSave("Waiting for next plate.");
+      
+      waitingForApp = true; // Pause the routine (but NOT the whole ESP32)
+      currentPlate++;       // Queue up the next plate number
+    }
   }
-  broadcastAndSave("Plate inspection complete.");
-  delay(500);
-  broadcastAndSave("Result:");
-  String log = {"Out of 10 plates, " + String(i) + " are damaged."};
-  broadcastAndSave(log);
-  if (damaged == 0) {
-    broadcastAndSave("No recommended action.");
-  } else {
-    broadcastAndSave("Recommended action: Plate replacement.");
-  }
-  delay(500);
-  broadcastAndSave("Inspection complete.");
-  delay(1000);
 }
 
 void broadcastAndSave(String logMessage){
@@ -259,5 +272,10 @@ void setup() {
 void loop() {
   server.handleClient();
   webSocket.loop();
-  sendFakeLogs();
+
+  inspectionRoutine();
+
+  if (state == "Standby"){
+    sendStandbyLog();
+  }
 }

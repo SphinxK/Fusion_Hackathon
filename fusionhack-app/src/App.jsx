@@ -43,6 +43,7 @@ const HomePage = () => {
         <ArmSimulation
           az={az} th2={th2} th3={th3}
           d1={d1} a1={a1} a2={a2} a3={a3}
+          activeTool={activeTool}
         />
         <div className="visualizer-title">
           3-DOF Inverted Arm Simulation
@@ -259,14 +260,20 @@ export default function App() {
     }
   }, [isInspecting, inspectionScansLeft]);
 
+  const handleSendWsMessage = (msg) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(msg);
+    }
+  };
+
   // Router function to render the correct component
   const renderContent = () => {
     switch (activeTab) {
-      case 'camera': return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} />;
+      case 'camera': return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} sendWsMessage={handleSendWsMessage} />;
       case 'home': return <HomePage />;
       case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
       case 'settings': return <AiTrainingPage />;
-      default: return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} />;
+      default: return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} sendWsMessage={handleSendWsMessage} />;
     }
   };
 
