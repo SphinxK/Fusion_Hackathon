@@ -325,15 +325,15 @@ export default function AiTrainingPage() {
 
   if (!startupChoice) {
     return (
-      <div className="camera-container" style={{ padding: '20px', textAlign: 'center' }}>
+      <div className="camera-container ai-init-screen">
         <h2>Initialize AI Inspection</h2>
-        <div style={styles.resultBox}>
+        <div className="ai-result-box">
           <p style={{ marginBottom: '20px' }}>Select an option to load the AI Brain before running the camera.</p>
-          <div style={styles.buttonRow}>
-            <button style={styles.btnSave} onClick={() => setStartupChoice('browser')}>
+          <div className="ai-button-row">
+            <button className="btn-save" onClick={() => setStartupChoice('browser')}>
               Start / Load from Browser
             </button>
-            <label style={styles.btnImport}>
+            <label className="btn-import">
               Import Model from File
               <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleInitialImport} />
             </label>
@@ -354,8 +354,7 @@ export default function AiTrainingPage() {
         src={`http://${IP_ADDRESS}/video`}
         alt="Camera Stream"
         crossOrigin="anonymous"
-        className="video-feed"
-        style={{ border: prediction === 'undamaged' ? '4px solid #34c759' : prediction === 'damaged' ? '4px solid #ff3b30' : 'none' }}
+        className={`video-feed ${prediction === 'undamaged' ? 'border-undamaged' : prediction === 'damaged' ? 'border-damaged' : ''}`}
         onLoad={() => {
           if (modelsReadyRef.current && !isReady) {
             setIsReady(true);
@@ -373,37 +372,37 @@ export default function AiTrainingPage() {
       />
 
       {isReady && (
-        <div style={styles.controls}>
-          <div style={styles.buttonRow}>
-            <button style={styles.btnUndamaged} onClick={() => addTrainingExample('undamaged')}>
+        <div className="ai-training-controls">
+          <div className="ai-button-row">
+            <button className="btn-undamaged" onClick={() => addTrainingExample('undamaged')}>
              Train Undamaged ({trainingCounts.undamaged})
             </button>
-            <button style={styles.btnDamaged} onClick={() => addTrainingExample('damaged')}>
+            <button className="btn-damaged" onClick={() => addTrainingExample('damaged')}>
              Train Damaged ({trainingCounts.damaged})
             </button>
           </div>
 
-          <div style={styles.buttonRow}>
-            <button style={styles.btnSave} onClick={saveModel}>
+          <div className="ai-button-row">
+            <button className="btn-save" onClick={saveModel}>
               Save to Browser
             </button>
-            <button style={styles.btnClear} onClick={clearModel}>
+            <button className="btn-clear" onClick={clearModel}>
               Clear Model
             </button>
           </div>
 
-          <div style={styles.buttonRow}>
-            <button style={styles.btnExport} onClick={exportModel}>
+          <div className="ai-button-row">
+            <button className="btn-export" onClick={exportModel}>
               Export to File
             </button>
-            <label style={styles.btnImport}>
+            <label className="btn-import">
               Import from File
               <input type="file" accept=".json" style={{ display: 'none' }} onChange={importModel} />
             </label>
           </div>
 
-          <div style={styles.resultBox}>
-            <h3>AI Sees: <strong>{prediction.toUpperCase()}</strong></h3>
+          <div className="ai-result-box">
+            <h3>AI Sees: <strong className={prediction === 'undamaged' ? 'text-green' : prediction === 'damaged' ? 'text-red' : ''}>{prediction.toUpperCase()}</strong></h3>
             <p>Confidence: {confidence}%</p>
           </div>
         </div>
@@ -411,16 +410,3 @@ export default function AiTrainingPage() {
     </div>
   );
 }
-
-// Simple inline styles for the AI controls
-const styles = {
-  controls: { marginTop: '20px', width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', gap: '15px' },
-  buttonRow: { display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' },
-  btnUndamaged: { padding: '12px 24px', backgroundColor: '#34c759', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
-  btnDamaged: { padding: '12px 24px', backgroundColor: '#ff3b30', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' },
-  btnSave: { padding: '8px 16px', backgroundColor: '#007aff', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
-  btnClear: { padding: '8px 16px', backgroundColor: '#8e8e93', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
-  btnExport: { padding: '8px 16px', backgroundColor: '#5ac8fa', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' },
-  btnImport: { padding: '8px 16px', backgroundColor: '#ff9500', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px', display: 'inline-block' },
-  resultBox: { padding: '15px', backgroundColor: '#fff', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', color: '#333' }
-};

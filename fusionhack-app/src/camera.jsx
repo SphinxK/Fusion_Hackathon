@@ -94,19 +94,14 @@ export default function CameraPage({ logs, isInspecting, inspectionScansLeft, se
   const latestPrediction = history[history.length - 1];
 
   return (
-    <div className="camera-container" style={{ position: 'relative' }}>
+    <div className="camera-container camera-page-wrapper">
       <h2>Live Camera</h2>
       <img
         ref={videoRef}
         src={`http://${IP_ADDRESS}/video`}
         alt="Camera Stream"
         crossOrigin="anonymous"
-        className="video-feed"
-        style={{
-          border: isInspecting && latestPrediction
-            ? latestPrediction.label === 'undamaged' ? '4px solid #34c759' : '4px solid #ff3b30'
-            : 'none'
-        }}
+        className={`video-feed ${isInspecting && latestPrediction ? (latestPrediction.label === 'undamaged' ? 'border-undamaged' : 'border-damaged') : ''}`}
         onError={(e) => {
           // Fallback to root or /stream if the default Android IP webcam /video path isn't right
           if (e.target.src.includes("/video")) {
@@ -118,62 +113,46 @@ export default function CameraPage({ logs, isInspecting, inspectionScansLeft, se
       />
 
       {isInspecting && (
-        <div style={{
-          position: 'absolute', top: '70px', left: '25px', backgroundColor: 'rgba(0,0,0,0.85)',
-          padding: '20px', borderRadius: '12px', color: 'white', border: '1px solid #444',
-          maxWidth: '300px', backdropFilter: 'blur(5px)'
-        }}>
-          <h3 style={{ margin: '0 0 15px 0', borderBottom: '1px solid #666', paddingBottom: '10px', display: 'flex', alignItems: 'center' }}>
+        <div className="camera-hud-overlay">
+          <h3 className="camera-hud-title">
             <Scan size={20} style={{ marginRight: '8px' }} />
             AI Inspection (Live)
           </h3>
           
-          <div style={{ marginBottom: '15px' }}>
+          <div className="camera-hud-section">
             {!modelLoaded ? (
               <p className="pulse" style={{ color: '#4c99f2', margin: 0 }}>Loading Neural Network...</p>
             ) : history.length === 0 ? (
-              <p style={{ margin: 0, color: '#aaa' }}>Awaiting First Scan...</p>
+              <p className="text-muted" style={{ margin: 0 }}>Awaiting First Scan...</p>
             ) : (
               <div>
-                <strong style={{ fontSize: '1.2rem', color: latestPrediction?.label === 'undamaged' ? '#34c759' : '#ff3b30' }}>
+                <strong style={{ fontSize: '1.2rem' }} className={latestPrediction?.label === 'undamaged' ? 'text-green' : 'text-red'}>
                   {latestPrediction?.label.toUpperCase()}
                 </strong> 
-                <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#ccc' }}>
+                <span className="text-muted" style={{ marginLeft: '10px', fontSize: '0.9rem' }}>
                   {latestPrediction?.confidence}% match
                 </span>
               </div>
             )}
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
+          <div className="camera-hud-section">
              <button
                onClick={predictFrame}
                disabled={!modelLoaded || inspectionScansLeft <= 0}
-               style={{
-                 width: '100%',
-                 padding: '10px',
-                 backgroundColor: modelLoaded && inspectionScansLeft > 0 ? '#007aff' : '#555',
-                 color: 'white',
-                 border: 'none',
-                 borderRadius: '8px',
-                 cursor: modelLoaded && inspectionScansLeft > 0 ? 'pointer' : 'not-allowed',
-                 fontWeight: 'bold'
-               }}
+               className={`btn-scan ${modelLoaded && inspectionScansLeft > 0 ? 'active' : 'disabled'}`}
              >
                Scan Frame Now ({inspectionScansLeft} left)
              </button>
           </div>
 
           {history.length > 0 && (
-            <div style={{ maxHeight: '150px', overflowY: 'auto', fontSize: '0.8rem' }}>
-              <div style={{ color: '#aaa', marginBottom: '8px', fontSize: '11px', textTransform: 'uppercase' }}>History ({history.length}/10)</div>
+            <div className="camera-hud-history">
+              <div className="camera-hud-history-title">History ({history.length}/10)</div>
               {history.slice().reverse().map((entry, idx) => (
-                <div key={idx} style={{ 
-                  display: 'flex', justifyContent: 'space-between', padding: '4px 0',
-                  borderBottom: '1px solid #333'
-                }}>
-                  <span style={{ color: '#888' }}>Scan {entry.id}</span>
-                  <span style={{ color: entry.label === 'undamaged' ? '#34c759' : '#ff3b30' }}>{entry.label}</span>
+                <div key={idx} className="camera-hud-entry">
+                  <span className="text-dark-muted">Scan {entry.id}</span>
+                  <span className={entry.label === 'undamaged' ? 'text-green' : 'text-red'}>{entry.label}</span>
                   <span>{entry.confidence}%</span>
                 </div>
               ))}

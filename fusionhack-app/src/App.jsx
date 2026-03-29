@@ -18,29 +18,19 @@ const HomePage = () => {
   const [activeTool, setActiveTool] = useState(1);
 
   return (
-    <div style={{ display: 'flex', height: '100%', width: '100%' }}>
-      <div style={{ width: '250px', backgroundColor: '#2a2a35', padding: '20px', borderRight: '1px solid #444', overflowY: 'auto' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Tool Heads</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+    <div className="home-page-container">
+      <div className="home-sidebar">
+        <h3 className="home-sidebar-title">Tool Heads</h3>
+        <div className="tool-buttons-container">
           {[
-            { id: 1, name: '1. Laser Duster' },
+            { id: 1, name: '1. Bolt Hand' },
             { id: 2, name: '2. Claw' },
             { id: 3, name: '3. Drill' }
           ].map(tool => (
             <button
               key={tool.id}
               onClick={() => setActiveTool(tool.id)}
-              style={{
-                padding: '12px',
-                background: activeTool === tool.id ? '#4c99f2' : '#3c3c4a',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                textAlign: 'left',
-                fontWeight: activeTool === tool.id ? 'bold' : 'normal',
-                transition: 'background 0.2s'
-              }}
+              className={`tool-button ${activeTool === tool.id ? 'active' : ''}`}
             >
               {tool.name}
             </button>
@@ -49,38 +39,38 @@ const HomePage = () => {
       </div>
 
       {/* 3D Visualizer Container */}
-      <div style={{ flex: 1, backgroundColor: '#1a1a1a', position: 'relative' }}>
+      <div className="visualizer-container">
         <ArmSimulation
           az={az} th2={th2} th3={th3}
           d1={d1} a1={a1} a2={a2} a3={a3}
         />
-        <div style={{ position: 'absolute', top: 16, left: 16, color: '#fff', fontSize: '1.2rem', fontWeight: 'bold' }}>
+        <div className="visualizer-title">
           3-DOF Inverted Arm Simulation
         </div>
       </div>
 
       {/* Control Panel */}
-      <div style={{ width: '300px', backgroundColor: '#2a2a35', padding: '20px', overflowY: 'auto', borderLeft: '1px solid #444', display: 'flex', flexDirection: 'column' }}>
-        <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Simulation Controls</h3>
+      <div className="control-panel">
+        <h3 className="home-sidebar-title">Simulation Controls</h3>
 
-        <div style={{ marginBottom: '24px' }}>
-          <h4 style={{ color: '#4c99f2', margin: '0 0 10px 0' }}>Joint Angles</h4>
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ccc', fontSize: '0.9rem', marginBottom: '4px' }}>
+        <div className="control-group">
+          <h4 className="control-title">Joint Angles</h4>
+          <div className="slider-container">
+            <div className="slider-header azimuth">
               <label>Joint 1 (Azimuth)</label>
               <span>{az}°</span>
             </div>
             <input type="range" className="slider slider-blue" min="-180" max="180" value={az} onChange={(e) => setAz(Number(e.target.value))} style={{ width: '100%', accentColor: '#4c99f2' }} />
           </div>
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#40cc8c', fontSize: '0.9rem', marginBottom: '4px' }}>
+          <div className="slider-container">
+            <div className="slider-header shoulder">
               <label>Joint 2 (Shoulder)</label>
               <span>{th2}°</span>
             </div>
             <input type="range" className="slider slider-green" min="-135" max="135" value={th2} onChange={(e) => setTh2(Number(e.target.value))} style={{ width: '100%', accentColor: '#40cc8c' }} />
           </div>
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f2a640', fontSize: '0.9rem', marginBottom: '4px' }}>
+          <div className="slider-container">
+            <div className="slider-header elbow">
               <label>Joint 3 (Elbow)</label>
               <span>{th3}°</span>
             </div>
@@ -88,33 +78,31 @@ const HomePage = () => {
           </div>
         </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <h4 style={{ color: '#aaa', margin: '0 0 10px 0' }}>Link Lengths</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div className="control-group">
+          <h4 className="control-title link-lengths">Link Lengths</h4>
+          <div className="link-grid">
             <div>
-              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Ceiling (d1)</label>
-              <input type="number" value={d1} onChange={(e) => setD1(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+              <label className="link-input-label">Ceiling (d1)</label>
+              <input type="number" className="link-input" value={d1} onChange={(e) => setD1(Number(e.target.value))} />
             </div>
             <div>
-              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Link 1 (a1)</label>
-              <input type="number" value={a1} onChange={(e) => setA1(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+              <label className="link-input-label">Link 1 (a1)</label>
+              <input type="number" className="link-input" value={a1} onChange={(e) => setA1(Number(e.target.value))} />
             </div>
             <div>
-              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Link 2 (a2)</label>
-              <input type="number" value={a2} onChange={(e) => setA2(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+              <label className="link-input-label">Link 2 (a2)</label>
+              <input type="number" className="link-input" value={a2} onChange={(e) => setA2(Number(e.target.value))} />
             </div>
             <div>
-              <label style={{ display: 'block', color: '#ccc', fontSize: '0.8rem', marginBottom: '4px' }}>Tool (a3)</label>
-              <input type="number" value={a3} onChange={(e) => setA3(Number(e.target.value))} style={{ width: '100%', padding: '6px', background: '#3c3c4a', color: '#fff', border: 'none', borderRadius: '4px', boxSizing: 'border-box' }} />
+              <label className="link-input-label">Tool (a3)</label>
+              <input type="number" className="link-input" value={a3} onChange={(e) => setA3(Number(e.target.value))} />
             </div>
           </div>
         </div>
 
         <div style={{ flexGrow: 1 }} />
         <button
-          style={{ width: '100%', padding: '10px', background: '#444', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 'bold' }}
-          onMouseOver={(e) => e.target.style.background = '#555'}
-          onMouseOut={(e) => e.target.style.background = '#444'}
+          className="reset-button"
           onClick={() => { setAz(0); setTh2(-45); setTh3(60); }}
         >
           Reset Angles
@@ -285,11 +273,11 @@ export default function App() {
   return (
     <main className="app-container">
       {/* App Header */}
-      <header className="app-header" style={{ display: 'flex', alignItems: 'center' }}>
+      <header className="app-header app-header-container">
         <h2 className="app-title">Robot Control</h2>
         {isInspecting && (
-          <div className="inspection-banner" style={{ background: '#eab308', color: '#000', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}><AlertTriangle size={18} /></span>
+          <div className="inspection-banner">
+            <span className="inspection-banner-icon"><AlertTriangle size={18} /></span>
             Manually Inspecting ({10 - inspectionScansLeft}/10)
           </div>
         )}
@@ -307,28 +295,28 @@ export default function App() {
           onClick={() => setActiveTab('camera')}
           disabled={isInspecting}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Camera size={18} /> Camera</span>
+          <span className="app-header-container" style={{gap: '6px'}}><Camera size={18} /> Camera</span>
         </button>
         <button
           className={activeTab === 'home' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('home')}
           disabled={isInspecting}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Home size={18} /> Home</span>
+          <span className="app-header-container" style={{gap: '6px'}}><Home size={18} /> Home</span>
         </button>
         <button
           className={activeTab === 'dashboard' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('dashboard')}
           disabled={isInspecting}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><BarChart2 size={18} /> Dash</span>
+          <span className="app-header-container" style={{gap: '6px'}}><BarChart2 size={18} /> Dash</span>
         </button>
         <button
           className={activeTab === 'settings' ? 'tab active' : 'tab'}
           onClick={() => setActiveTab('settings')}
           disabled={isInspecting}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}><Settings size={18} /> AI Training</span>
+          <span className="app-header-container" style={{gap: '6px'}}><Settings size={18} /> AI Training</span>
         </button>
       </nav>
     </main>

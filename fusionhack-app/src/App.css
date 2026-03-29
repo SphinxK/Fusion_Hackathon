@@ -452,3 +452,320 @@ button {
 .log-entry:last-child {
   color: #e2e8f0;
 }
+/* =========================================
+   HomePage Styles
+========================================= */
+.home-page-container {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+
+.home-sidebar {
+  width: 250px;
+  background-color: #2a2a35;
+  padding: 20px;
+  border-right: 1px solid #444;
+  overflow-y: auto;
+}
+
+.home-sidebar-title {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.tool-buttons-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-button {
+  padding: 12px;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+  background-color: #3c3c4a;
+  font-weight: normal;
+}
+.tool-button.active {
+  background-color: #4c99f2;
+  font-weight: bold;
+}
+
+.visualizer-container {
+  flex: 1;
+  background-color: #1a1a1a;
+  position: relative;
+}
+
+.visualizer-title {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.control-panel {
+  width: 300px;
+  background-color: #2a2a35;
+  padding: 20px;
+  overflow-y: auto;
+  border-left: 1px solid #444;
+  display: flex;
+  flex-direction: column;
+}
+
+.control-group {
+  margin-bottom: 24px;
+}
+
+.control-title {
+  color: #4c99f2;
+  margin: 0 0 10px 0;
+}
+.control-title.link-lengths {
+  color: #aaa;
+}
+
+.slider-container {
+  margin-bottom: 12px;
+}
+
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+.slider-header.azimuth { color: #ccc; }
+.slider-header.shoulder { color: #40cc8c; }
+.slider-header.elbow { color: #f2a640; }
+
+.link-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.link-input-label {
+  display: block;
+  color: #ccc;
+  font-size: 0.8rem;
+  margin-bottom: 4px;
+}
+
+.link-input {
+  width: 100%;
+  padding: 6px;
+  background-color: #3c3c4a;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.reset-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #444;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: bold;
+}
+.reset-button:hover { background-color: #555; }
+
+/* =========================================
+   App Component Global Styles Additions
+========================================= */
+.app-header-container {
+  display: flex;
+  align-items: center;
+}
+
+.inspection-banner {
+  background-color: #eab308;
+  color: #000;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 14px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+.inspection-banner-icon {
+  margin-right: 8px;
+  display: flex;
+  align-items: center;
+}
+
+/* =========================================
+   Camera Page Styles
+========================================= */
+.camera-page-wrapper {
+  position: relative;
+}
+
+.camera-hud-overlay {
+  position: absolute;
+  top: 70px;
+  left: 25px;
+  background-color: rgba(0,0,0,0.85);
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+  border: 1px solid #444;
+  max-width: 300px;
+  backdrop-filter: blur(5px);
+}
+.camera-hud-title {
+  margin: 0 0 15px 0;
+  border-bottom: 1px solid #666;
+  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+}
+.camera-hud-section { margin-bottom: 15px; }
+
+.camera-hud-history {
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 0.8rem;
+}
+
+.camera-hud-history-title {
+  color: #aaa;
+  margin-bottom: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+.camera-hud-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #333;
+}
+
+.border-undamaged { border: 4px solid #34c759 !important; }
+.border-damaged { border: 4px solid #ff3b30 !important; }
+.text-green { color: #34c759; }
+.text-red { color: #ff3b30; }
+.text-muted { color: #ccc; }
+.text-dark-muted { color: #888; }
+.btn-scan {
+  width: 100%;
+  padding: 10px;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+.btn-scan.active {
+  background-color: #007aff;
+  cursor: pointer;
+}
+.btn-scan.disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   AI Training Page Styles
+========================================= */
+.ai-training-controls {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.ai-button-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.btn-undamaged {
+  padding: 12px 24px;
+  background-color: #34c759;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.btn-damaged {
+  padding: 12px 24px;
+  background-color: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+.btn-save {
+  padding: 8px 16px;
+  background-color: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+.btn-clear {
+  padding: 8px 16px;
+  background-color: #8e8e93;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+.btn-export {
+  padding: 8px 16px;
+  background-color: #5ac8fa;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+.btn-import {
+  padding: 8px 16px;
+  background-color: #ff9500;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  display: inline-block;
+}
+.ai-result-box {
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  color: #333;
+}
+.ai-init-screen {
+  padding: 20px;
+  text-align: center;
+}
+
