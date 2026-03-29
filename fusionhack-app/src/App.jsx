@@ -43,6 +43,7 @@ const HomePage = () => {
         <ArmSimulation
           az={az} th2={th2} th3={th3}
           d1={d1} a1={a1} a2={a2} a3={a3}
+          activeTool={activeTool}
         />
         <div className="visualizer-title">
           3-DOF Inverted Arm Simulation

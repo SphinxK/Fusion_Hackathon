@@ -1,6 +1,36 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Sphere, Cylinder, Grid } from '@react-three/drei';
+import { OrbitControls, Sphere, Cylinder, Grid, useGLTF } from '@react-three/drei';
+
+function CustomToolHead({ activeTool }) {
+  // Load models (Drei caches them instantly behind the scenes)
+  const boltHand = useGLTF('/Bolt Hand.glb');
+  const claw = useGLTF('/Grabber hand.glb');
+  const drill = useGLTF('/Drill Hand.glb');
+
+  let model = null;
+  if (activeTool === 1) model = boltHand.scene;
+  if (activeTool === 2) model = claw.scene;
+  if (activeTool === 3) model = drill.scene;
+
+  if (!model) return null;
+
+  // Scaling down to 0.025 for better proportion
+  // Rotated 90 degrees (Math.PI / 2) on the X-axis to align parallel with the final bone
+  return (
+    <primitive 
+      object={model} 
+      scale={[0.025, 0.025, 0.025]} 
+      position={[0, 0, 0]} 
+      rotation={[Math.PI / 2, 0, 0]} 
+    />
+  );
+}
+
+// Preload globally so switching is instant
+useGLTF.preload('/Bolt Hand.glb');
+useGLTF.preload('/Grabber hand.glb');
+useGLTF.preload('/Drill Hand.glb');
 
 export default function ArmSimulation({ 
   az = 0, 
@@ -9,7 +39,8 @@ export default function ArmSimulation({
   d1 = 10, 
   a1 = 5, 
   a2 = 4, 
-  a3 = 2 
+  a3 = 2,
+  activeTool = 1
 }) {
   const azRad = az * Math.PI / 180;
   const th2Rad = th2 * Math.PI / 180;
@@ -93,10 +124,16 @@ export default function ArmSimulation({
                     <meshStandardMaterial color={colors.link3} />
                   </Cylinder>
                   
-                  {/* End Effector Marker */}
-                  <Sphere args={[tube3_r * 1.6, 32, 32]} position={[0, -a3, 0]}>
-                     <meshStandardMaterial color="#ffea33" />
-                  </Sphere>
+                  {/* End Effector Custom Tool Head */}
+                  <group position={[0, -a3, 0]}>
+                    <Suspense fallback={
+                      <Sphere args={[tube3_r * 1.6, 32, 32]}>
+                        <meshStandardMaterial color="#ffea33" />
+                      </Sphere>
+                    }>
+                      <CustomToolHead activeTool={activeTool} />
+                    </Suspense>
+                  </group>
                 </group>
               </group>
             </group>
