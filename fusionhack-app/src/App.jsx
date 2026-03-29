@@ -23,10 +23,9 @@ const HomePage = () => {
         <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#fff' }}>Tool Heads</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {[
-            { id: 1, name: '1. Vacuum Cleaner' },
-            { id: 2, name: '2. Laser Duster' },
-            { id: 3, name: '3. Claw' },
-            { id: 4, name: '4. Drill' }
+            { id: 1, name: '1. Laser Duster' },
+            { id: 2, name: '2. Claw' },
+            { id: 3, name: '3. Drill' }
           ].map(tool => (
             <button
               key={tool.id}
@@ -170,7 +169,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('camera');
   const [robotMode, setRobotMode] = useState('standby');
   const [isInspecting, setIsInspecting] = useState(false);
-  const [inspectionTimeLeft, setInspectionTimeLeft] = useState(0);
+  const [inspectionScansLeft, setInspectionScansLeft] = useState(0);
 
   // App-level WebSocket and Logs state
   const [logs, setLogs] = useState([
@@ -256,7 +255,7 @@ export default function App() {
     setRobotMode(mode);
     if (mode === 'inspection') {
       setIsInspecting(true);
-      setInspectionTimeLeft(5); // 5 sec inspection timer
+      setInspectionScansLeft(10); // 10 scans
       setActiveTab('camera');
       
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -266,24 +265,20 @@ export default function App() {
   };
 
   useEffect(() => {
-    let timerId;
-    if (isInspecting && inspectionTimeLeft > 0) {
-      timerId = setTimeout(() => setInspectionTimeLeft(inspectionTimeLeft - 1), 1000);
-    } else if (isInspecting && inspectionTimeLeft === 0) {
+    if (isInspecting && inspectionScansLeft <= 0) {
       setIsInspecting(false);
       setRobotMode('standby');
     }
-    return () => clearTimeout(timerId);
-  }, [isInspecting, inspectionTimeLeft]);
+  }, [isInspecting, inspectionScansLeft]);
 
   // Router function to render the correct component
   const renderContent = () => {
     switch (activeTab) {
-      case 'camera': return <CameraPage logs={logs} />;
+      case 'camera': return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} />;
       case 'home': return <HomePage />;
       case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
       case 'settings': return <AiTrainingPage />;
-      default: return <CameraPage logs={logs} />;
+      default: return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} />;
     }
   };
 
@@ -295,7 +290,7 @@ export default function App() {
         {isInspecting && (
           <div className="inspection-banner" style={{ background: '#eab308', color: '#000', padding: '4px 12px', borderRadius: '12px', fontWeight: 'bold', fontSize: '14px', marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
             <span style={{ marginRight: '8px', display: 'flex', alignItems: 'center' }}><AlertTriangle size={18} /></span>
-            Inspecting... {inspectionTimeLeft}s
+            Manually Inspecting ({10 - inspectionScansLeft}/10)
           </div>
         )}
       </header>

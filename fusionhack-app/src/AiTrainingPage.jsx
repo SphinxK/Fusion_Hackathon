@@ -3,8 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as mobilenet from '@tensorflow-models/mobilenet';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
-const IP_ADDRESS = "10.207.5.199:8080";
-
+const IP_ADDRESS = "10.207.24.88:8080";
 // --- Simple IndexedDB Wrapper to bypass LocalStorage limits ---
 const openDB = () => new Promise((resolve, reject) => {
   const req = indexedDB.open("AiTrainingDB", 1);
