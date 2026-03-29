@@ -6,13 +6,24 @@ import * as knnClassifier from '@tensorflow-models/knn-classifier';
 
 const IP_ADDRESS = "10.207.24.88:8080";
 
-export default function CameraPage({ logs, isInspecting, inspectionScansLeft, setInspectionScansLeft }) {
+export default function CameraPage({ logs, isInspecting, inspectionScansLeft, setInspectionScansLeft, sendWsMessage }) {
   const logEndRef = useRef(null);
   const videoRef = useRef(null);
   const classifierRef = useRef(null);
   const mobilenetRef = useRef(null);
   const [modelLoaded, setModelLoaded] = useState(false);
   const [history, setHistory] = useState([]);
+  const [canScan, setCanScan] = useState(false);
+
+  // Check logs for "Waiting for next plate."
+  useEffect(() => {
+    if (logs.length > 0 && !canScan) {
+      const recentLogs = logs.slice(-3);
+      if (recentLogs.some(log => log && log.includes("Waiting for next plate."))) {
+        setCanScan(true);
+      }
+    }
+  }, [logs, canScan]);
 
   // Auto-scroll the log window down when new messages arrive
   useEffect(() => {
@@ -56,8 +67,10 @@ export default function CameraPage({ logs, isInspecting, inspectionScansLeft, se
   useEffect(() => {
     if (isInspecting && inspectionScansLeft === 10) {
       setHistory([]);
+      setCanScan(false);
     } else if (!isInspecting) {
       setHistory([]);
+      setCanScan(false);
     }
   }, [isInspecting, inspectionScansLeft]);
 
@@ -65,7 +78,7 @@ export default function CameraPage({ logs, isInspecting, inspectionScansLeft, se
   async function predictFrame() {
     if (!isInspecting || !modelLoaded || !videoRef.current || !classifierRef.current) return;
     if (classifierRef.current.getNumClasses() === 0) return;
-    if (inspectionScansLeft <= 0) return;
+    if (inspectionScansLeft <= 0 || !canScan) return;
 
     try {
       const features = mobilenetRef.current.infer(videoRef.current, true);
@@ -82,6 +95,11 @@ export default function CameraPage({ logs, isInspecting, inspectionScansLeft, se
         label: result.label, 
         confidence: conf
       }]);
+
+      if (sendWsMessage) {
+        sendWsMessage(result.label); // "damaged" or "undamaged"
+      }
+      setCanScan(false);
       
       features.dispose();
       
@@ -139,10 +157,10 @@ export default function CameraPage({ logs, isInspecting, inspectionScansLeft, se
           <div className="camera-hud-section">
              <button
                onClick={predictFrame}
-               disabled={!modelLoaded || inspectionScansLeft <= 0}
-               className={`btn-scan ${modelLoaded && inspectionScansLeft > 0 ? 'active' : 'disabled'}`}
+               disabled={!modelLoaded || inspectionScansLeft <= 0 || !canScan}
+               className={`btn-scan ${modelLoaded && inspectionScansLeft > 0 && canScan ? 'active' : 'disabled'}`}
              >
-               Scan Frame Now ({inspectionScansLeft} left)
+               {!canScan && inspectionScansLeft > 0 ? "Waiting for ESP..." : `Scan Frame Now (${inspectionScansLeft} left)`}
              </button>
           </div>
 

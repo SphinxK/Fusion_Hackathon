@@ -259,14 +259,20 @@ export default function App() {
     }
   }, [isInspecting, inspectionScansLeft]);
 
+  const handleSendWsMessage = (msg) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(msg);
+    }
+  };
+
   // Router function to render the correct component
   const renderContent = () => {
     switch (activeTab) {
-      case 'camera': return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} />;
+      case 'camera': return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} sendWsMessage={handleSendWsMessage} />;
       case 'home': return <HomePage />;
       case 'dashboard': return <DashboardPage robotMode={robotMode} setRobotMode={handleSetRobotMode} isInspecting={isInspecting} />;
       case 'settings': return <AiTrainingPage />;
-      default: return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} />;
+      default: return <CameraPage logs={logs} isInspecting={isInspecting} inspectionScansLeft={inspectionScansLeft} setInspectionScansLeft={setInspectionScansLeft} sendWsMessage={handleSendWsMessage} />;
     }
   };
 
